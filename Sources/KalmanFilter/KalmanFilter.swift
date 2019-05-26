@@ -36,8 +36,8 @@ public class KalmanFilter {
         
         self.x = configuration.state
         
-        self.motion = configuration.motionModel
-        self.observation = configuration.observationModel
+        self.motion = configuration.motion
+        self.observation = configuration.observation
         
         self.p = configuration.estimateCovariance
         self.q = configuration.processNoiseCovariance

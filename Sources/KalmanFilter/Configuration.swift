@@ -21,7 +21,7 @@ public class Configuration {
     }
     
     /// The kalman filters's motion model (used for prediction).
-    public var motionModel: MotionModel {
+    public var motion: MotionModel {
         didSet {
 //            let dummyState: Vector<Double> = .init(rows: self.dimensions.state)
 //            let dummyInput: Vector<Double> = .init(rows: self.dimensions.input)
@@ -41,7 +41,7 @@ public class Configuration {
     }
     
     /// The kalman filters's observation model (used for correction).
-    public var observationModel: ObservationModel {
+    public var observation: ObservationModel {
         didSet {
 //            let dummyState: Vector<Double> = .init(rows: self.dimensions.state)
 //
@@ -137,7 +137,7 @@ public class Configuration {
         
         self.state = Vector(rows: dimensions.state)
         
-        self.motionModel = StaticMatrixMotionModel(
+        self.motion = StaticMatrixMotionModel(
             a: Matrix(
                 diagonal: 1.0,
                 size: dimensions.state
@@ -147,7 +147,7 @@ public class Configuration {
                 size: dimensions.state
             )
         )
-        self.observationModel = StaticMatrixObservationModel(
+        self.observation = StaticMatrixObservationModel(
             h: Matrix(
                 diagonal: 1.0,
                 size: dimensions.state
@@ -172,8 +172,8 @@ extension Configuration: CustomStringConvertible {
         string += "dimensions: \(self.dimensions)\n"
         string += "state:\n\(self.state)\n"
         
-        string += "motionModel:\n\(self.motionModel)\n"
-        string += "observationModel:\n\(self.observationModel)\n"
+        string += "motion:\n\(self.motion)\n"
+        string += "observation:\n\(self.observation)\n"
         
         string += "estimateCovariance:\n\(self.estimateCovariance)\n"
         string += "processNoiseCovariance:\n\(self.processNoiseCovariance)\n"

@@ -63,8 +63,8 @@ final class LinearVelocityModelTests: XCTestCase {
         
         return Configuration(dimensions: dimensions) { config in
             config.state = initialState
-            config.motionModel = motionModel
-            config.observationModel = observationModel
+            config.motion = motionModel
+            config.observation = observationModel
             config.estimateCovariance = estimateCovariance
             config.processNoiseCovariance = processNoiseCovariance
             config.outputNoiseCovariance = outputNoiseCovariance
@@ -84,12 +84,12 @@ final class LinearVelocityModelTests: XCTestCase {
         let states = self.makeSignal(
             initial: configuration.state,
             inputs: inputs,
-            model: configuration.motionModel,
+            model: configuration.motion,
             processNoise: configuration.processNoiseCovariance
         )
         
         let outputs: [Vector<Double>] = states.map { state in
-            let output: Vector<Double> = configuration.observationModel.apply(state: state)
+            let output: Vector<Double> = configuration.observation.apply(state: state)
             let standardNoise: Vector<Double> = Vector(gaussianRandom: configuration.dimensions.output)
             let noise: Vector<Double> = configuration.outputNoiseCovariance * standardNoise
             return output + noise
@@ -124,12 +124,12 @@ final class LinearVelocityModelTests: XCTestCase {
         let states = self.makeSignal(
             initial: configuration.state,
             inputs: inputs,
-            model: configuration.motionModel,
+            model: configuration.motion,
             processNoise: configuration.processNoiseCovariance
         )
         
         let outputs: [Vector<Double>] = states.map { state in
-            let output: Vector<Double> = configuration.observationModel.apply(state: state)
+            let output: Vector<Double> = configuration.observation.apply(state: state)
             let standardNoise: Vector<Double> = Vector(gaussianRandom: configuration.dimensions.output)
             let noise: Vector<Double> = configuration.outputNoiseCovariance * standardNoise
             return output + noise
