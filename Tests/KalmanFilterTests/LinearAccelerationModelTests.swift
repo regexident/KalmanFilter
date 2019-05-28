@@ -5,7 +5,7 @@ import XCTest
 final class LinearAccelerationModelTests: XCTestCase {
     let acceleration: (x: Double, y: Double) = (x: 2.0, y: 1.0) // in m/s^2
     
-    let configuration: Configuration = {
+    let model: Model = {
         // Modelled after:
         // https://github.com/balzer82/Kalman/blob/master/Kalman-Filter-CA.ipynb
         
@@ -17,24 +17,16 @@ final class LinearAccelerationModelTests: XCTestCase {
         
         let time = 0.1 // time delta
         
-        let initialState: Vector = [
-            0.0, // Position X
-            0.0, // Position Y
-            0.0, // Velocity X
-            0.0, // Velocity Y
-            0.0, // Acceleration X
-            0.0, // Acceleration Y
-        ]
-        
-        let motionModel = StaticMatrixMotionModel(
-            a: [
+        let motionModel = LinearMotionModel(
+            state: [
                 [1.0, 0.0, time, 0.0, 0.5 * time * time, 0.0],
                 [0.0, 1.0, 0.0, time, 0.0, 0.5 * time * time],
                 [0.0, 0.0, 1.0, 0.0, time, 0.0],
                 [0.0, 0.0, 0.0, 1.0, 0.0, time],
                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            ], b: [
+            ],
+            input: [
                 [0.0, 0.0],
                 [0.0, 0.0],
                 [0.5 * time * time, 0.0],
@@ -44,84 +36,103 @@ final class LinearAccelerationModelTests: XCTestCase {
             ]
         )
         
-        let observationModel = StaticMatrixObservationModel(
-            h: [
+        let observationModel = LinearObservationModel(
+            state: [
                 [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
             ]
         )
         
-        let processNoiseCovariance: Matrix<Double> = {
-            let acc = 1.0 // max expected acceleration in m/sec^2
-            let qs: Matrix = [
-                [acc * 0.5 * time * time], // translation in m (double-integrated acceleration)
-                [acc * 0.5 * time * time], // translation in m (double-integrated acceleration)
-                [acc * time], // velocity in m/s (integrated acceleration)
-                [acc * time], // velocity in m/s (integrated acceleration)
-                [acc * 1.0], // acceleration in m/s^2
-                [acc * 1.0], // acceleration in m/s^2
-            ]
-            return (qs * qs.transposed()).squared()
-        }()
+        let noiseModel = NoiseModel(
+            process: {
+                let acceleration = 1.0 // max expected acceleration in m/sec^2
+                let qs: Matrix = [
+                    [acceleration * 0.5 * time * time], // translation in m (double-integrated acceleration)
+                    [acceleration * 0.5 * time * time], // translation in m (double-integrated acceleration)
+                    [acceleration * time], // velocity in m/s (integrated acceleration)
+                    [acceleration * time], // velocity in m/s (integrated acceleration)
+                    [acceleration * 1.0], // acceleration in m/s^2
+                    [acceleration * 1.0], // acceleration in m/s^2
+                ]
+                return (qs * qs.transposed()).squared()
+            }(),
+            output: Matrix(
+                diagonal: 2.0,
+                size: dimensions.output
+            ).squared()
+        )
         
-        let outputNoiseVariance = 2.0
-        let outputNoiseCovariance = Matrix(diagonal: outputNoiseVariance, size: dimensions.output).squared()
-        
-        let estimateCovariance: Matrix<Double> = Matrix(diagonal: 1.0, size: dimensions.state)
-        
-        return Configuration(dimensions: dimensions) { config in
-            config.state = initialState
-            config.motion = motionModel
-            config.observation = observationModel
-            config.estimateCovariance = estimateCovariance
-            config.processNoiseCovariance = processNoiseCovariance
-            config.outputNoiseCovariance = outputNoiseCovariance
-        }
+        return Model(
+            dimensions: dimensions,
+            motionModel: motionModel,
+            observationModel: observationModel,
+            noiseModel: noiseModel
+        )
     }()
     
-    func testConstantModel() {
-        let configuration = self.configuration
+    let initialState: Vector<Double> = [
+        0.0, // Position X
+        0.0, // Position Y
+        0.0, // Velocity X
+        0.0, // Velocity Y
+        0.0, // Acceleration X
+        0.0, // Acceleration Y
+    ]
+    
+    func estimate() -> Estimate {
+        return Estimate(
+            state: self.initialState,
+            covariance: Matrix(diagonal: 1.0, size: 6)
+        )
+    }
+    
+    func filter(input: (Int) -> Vector<Double>) -> Double {
+        let model = self.model
+        let estimate = self.estimate()
+        let initialState = self.initialState
         
         let sampleCount = 200
-        let inputs: [Vector<Double>] = (0..<sampleCount).map { i in
+        let inputs: [Vector<Double>] = (0..<sampleCount).map(input)
+        
+        let states = self.makeSignal(
+            initial: initialState,
+            inputs: inputs,
+            model: model.motionModel,
+            processNoise: model.noiseModel.process
+        )
+        
+        let outputs: [Vector<Double>] = states.map { state in
+            let output: Vector<Double> = model.observationModel.apply(state: state)
+            let standardNoise: Vector<Double> = Vector(gaussianRandom: model.dimensions.output)
+            let noise: Vector<Double> = model.noiseModel.output * standardNoise
+            return output + noise
+        }
+        
+        let kalmanFilter = KalmanFilter(estimate: estimate, model: model)
+        
+        let filteredStates: [Vector<Double>] = Swift.zip(inputs, outputs).map { input, output in
+            return kalmanFilter.filter(output: output, input: input).state
+        }
+        
+//        self.printSheet(unfiltered: states, filtered: filteredStates, measured: outputs)
+        
+        let (similarity, _) = autoCorrelation(between: states, and: filteredStates, within: 10) { $0.distance(to: $1) }
+        
+        return similarity
+    }
+    
+    func testConstantModel() {
+        let similarity = self.filter { i in
             let x = self.acceleration.x
             let y = self.acceleration.y
             return Vector(column: [x, y])
         }
         
-        let states = self.makeSignal(
-            initial: configuration.state,
-            inputs: inputs,
-            model: configuration.motion,
-            processNoise: configuration.processNoiseCovariance
-        )
-        
-        let outputs: [Vector<Double>] = states.map { state in
-            let output: Vector<Double> = configuration.observation.apply(state: state)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: configuration.dimensions.output)
-            let noise: Vector<Double> = configuration.outputNoiseCovariance * standardNoise
-            return output + noise
-        }
-        
-        let kalmanFilter = KalmanFilter(configuration)
-
-        let filteredStates: [Vector<Double>] = Swift.zip(inputs, outputs).map { input, output in
-            let filteredState = kalmanFilter.filter(output: output, input: input)
-            return filteredState
-        }
-        
-//        self.printSheet(unfiltered: states, filtered: filteredStates, measured: outputs)
-
-        let (similarity, _) = autoCorrelation(between: states, and: filteredStates, within: 10) { $0.distance(to: $1) }
-
         XCTAssertLessThan(similarity, 5.0)
     }
     
     func testVariableModel() {
-        let configuration = self.configuration
-        
-        let sampleCount = 200
-        let inputs: [Vector<Double>] = (0..<sampleCount).map { i in
+        let similarity = self.filter { i in
             let sine = sin(Double(i) * 0.1) * 0.5 + 0.5 // sine-wave from 0.0..1.0
             let cosine = cos(Double(i) * 0.1) * 0.5 + 0.5 // cosine-wave from 0.0..1.0
             let x = self.acceleration.x * sine
@@ -129,31 +140,6 @@ final class LinearAccelerationModelTests: XCTestCase {
             return Vector(column: [x, y])
         }
         
-        let states = self.makeSignal(
-            initial: configuration.state,
-            inputs: inputs,
-            model: configuration.motion,
-            processNoise: configuration.processNoiseCovariance
-        )
-        
-        let outputs: [Vector<Double>] = states.map { state in
-            let output: Vector<Double> = configuration.observation.apply(state: state)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: configuration.dimensions.output)
-            let noise: Vector<Double> = configuration.outputNoiseCovariance * standardNoise
-            return output + noise
-        }
-        
-        let kalmanFilter = KalmanFilter(configuration)
-
-        let filteredStates: [Vector<Double>] = Swift.zip(inputs, outputs).map { input, output in
-            let filteredState = kalmanFilter.filter(output: output, input: input)
-            return filteredState
-        }
-        
-//        self.printSheet(unfiltered: states, filtered: filteredStates, measured: outputs)
-
-        let (similarity, _) = autoCorrelation(between: states, and: filteredStates, within: 10) { $0.distance(to: $1) }
-
         XCTAssertLessThan(similarity, 5.0)
     }
     

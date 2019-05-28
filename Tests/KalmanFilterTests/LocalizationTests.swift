@@ -3,27 +3,21 @@ import XCTest
 @testable import KalmanFilter
 
 final class LocalizationTests: XCTestCase {
-    let configuration: Configuration = {
+    let model: Model = {
         let dimensions = Dimensions(
             state: 4, // [target position x, target position y, self position x, self position y]
             input: 2, // [self position x, self position y]
             output: 1 // [distance]
         )
         
-        let initialState: Vector = [
-            5.0, // Target Position X
-            10.0, // Target Position Y
-            0.0, // Self Position X
-            0.0, // Self Position Y
-        ]
-        
-        let motionModel = StaticMatrixMotionModel(
-            a: [
+        let motionModel = LinearMotionModel(
+            state: [
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0],
-            ], b: [
+            ],
+            input: [
                 [0.0, 0.0],
                 [0.0, 0.0],
                 [1.0, 0.0],
@@ -31,7 +25,7 @@ final class LocalizationTests: XCTestCase {
             ]
         )
         
-        let observationModel = FunctionObservationModel(output: 1) { state in
+        let observationModel = NonlinearObservationModel(dimensions: dimensions) { state in
             let targetPosition: Vector<Double> = [state[0], state[1]]
             let selfPosition: Vector<Double> = [state[2], state[3]]
             let delta = targetPosition - selfPosition
@@ -39,25 +33,36 @@ final class LocalizationTests: XCTestCase {
             return [dist]
         }
         
-        let processNoiseCovariance = Matrix(diagonal: 0.0, size: 4)
+        let noiseModel = NoiseModel(
+            process: Matrix(diagonal: 0.0, size: 4),
+            output: {
+                return Matrix(
+                    diagonal: 2.0,
+                    size: dimensions.output
+                ).squared()
+            }()
+        )
         
-        let outputNoiseVariance = 2.0
-        let outputNoiseCovariance = Matrix(diagonal: outputNoiseVariance, size: dimensions.output).squared()
-        
-        let estimateCovariance: Matrix<Double> = Matrix(diagonal: 1.0, size: dimensions.state)
-        
-        return Configuration(dimensions: dimensions) { config in
-            config.state = initialState
-            config.motion = motionModel
-            config.observation = observationModel
-            config.estimateCovariance = estimateCovariance
-            config.processNoiseCovariance = processNoiseCovariance
-            config.outputNoiseCovariance = outputNoiseCovariance
-        }
+        return Model(
+            dimensions: dimensions,
+            motionModel: motionModel,
+            observationModel: observationModel,
+            noiseModel: noiseModel
+        )
     }()
     
     func testModel() {
-        let configuration = self.configuration
+        let model = self.model
+        
+        let estimate = Estimate(
+            state: [
+                5.0, // Target Position X
+                10.0, // Target Position Y
+                0.0, // Self Position X
+                0.0, // Self Position Y
+            ],
+            covariance: Matrix(diagonal: 1.0, size: model.dimensions.state)
+        )
         
         let interval = 0.1
         let sampleCount = 200
@@ -70,24 +75,23 @@ final class LocalizationTests: XCTestCase {
         }
         
         let states = self.makeSignal(
-            initial: configuration.state,
+            initial: estimate.state,
             inputs: inputs,
-            model: configuration.motion,
-            processNoise: configuration.processNoiseCovariance
+            model: model.motionModel,
+            processNoise: model.noiseModel.process
         )
         
         let outputs: [Vector<Double>] = states.map { state in
-            let output: Vector<Double> = configuration.observation.apply(state: state)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: configuration.dimensions.output)
-            let noise: Vector<Double> = configuration.outputNoiseCovariance * standardNoise
+            let output: Vector<Double> = model.observationModel.apply(state: state)
+            let standardNoise: Vector<Double> = Vector(gaussianRandom: model.dimensions.output)
+            let noise: Vector<Double> = model.noiseModel.output * standardNoise
             return output + noise
         }
         
-        let kalmanFilter = KalmanFilter(configuration)
+        let kalmanFilter = KalmanFilter(estimate: estimate, model: model)
 
         let filteredStates: [Vector<Double>] = Swift.zip(inputs, outputs).map { input, output in
-            let filteredState = kalmanFilter.filter(output: output, input: input)
-            return filteredState
+            return kalmanFilter.filter(output: output, input: input).state
         }
         
 //        self.printSheet(unfiltered: states, filtered: filteredStates, measured: outputs)

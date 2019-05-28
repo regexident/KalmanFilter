@@ -43,10 +43,22 @@ public struct Matrix<Scalar> where Scalar: FloatingPoint, Scalar: ExpressibleByF
         self.init(diagonal: scalars)
     }
     
+    public init(diagonal repeatedValue: Scalar, rows: Int, columns: Int) {
+        let size = min(rows, columns)
+        let scalars = repeatElement(repeatedValue, count: size)
+        self.init(diagonal: scalars, rows: rows, columns: columns)
+    }
+    
     public init<C: Collection>(diagonal scalars: C) where C.Element == Scalar {
         let size = scalars.count
+        self.init(diagonal: scalars, rows: size, columns: size)
+    }
+    
+    public init<C: Collection>(diagonal scalars: C, rows: Int, columns: Int) where C.Element == Scalar {
+        assert(scalars.count <= rows)
+        assert(scalars.count <= columns)
         
-        self.init(rows: size, columns: size)
+        self.init(rows: rows, columns: columns)
         
         for (i, scalar) in scalars.enumerated() {
             self.matrix[i, i] = scalar
