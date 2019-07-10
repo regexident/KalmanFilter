@@ -2,19 +2,28 @@ import Foundation
 
 public protocol MotionModel {
     /// Calculate predicted state estimate
+    ///
+    /// ```
     /// x'(k) = A * x(k-1) + B * u(k)
+    /// ```
+    ///
     /// or more generally
+    ///
+    /// ```
     /// x'(k) = f(x(k-1))
+    /// ```
     func apply(state x: Vector<Double>, input u: Vector<Double>) -> Vector<Double>
     
     /// Calculate jacobian matrix:
+    ///
+    /// ```
     /// F(k) = df(k)|
     ///        -----|
     ///         d(x)|
     ///             |x=X
+    /// ```
     func jacobian(state x: Vector<Double>, input u: Vector<Double>) -> Matrix<Double>
 }
-
 
 public class LinearMotionModel {
     public let state: Matrix<Double>

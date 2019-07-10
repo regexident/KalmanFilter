@@ -24,8 +24,11 @@ public class KalmanFilter {
     }
 
     /// Predicts next state using current state and input and calculates probability estimate.
+    ///
+    /// ```
     /// x'(k) = A * x(k-1) + B * u(k).
     /// P'(k) = A * P(k-1) * At + Q
+    /// ```
     public func predict(input u: Vector<Double>) -> (prediction: Vector<Double>, probability: Matrix<Double>) {
         let estimate = self.estimate
         let model = self.model
@@ -49,9 +52,12 @@ public class KalmanFilter {
     }
 
     /// Corrects the state error covariance based on innovation vector and Kalman update.
+    ///
+    /// ```
     /// P'(k) = A * P(k-1) * At + Q
     /// K(k) = P'(k) * Ht * (H * P'(k) * Ht + R)^(-1)
     /// x(k) = x'(k) + K(k) * (z(k) - H * x'(k))
+    /// ```
     public func update(
         prediction x: Vector<Double>,
         probability p: Matrix<Double>,

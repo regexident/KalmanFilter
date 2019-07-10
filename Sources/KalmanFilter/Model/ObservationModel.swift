@@ -2,17 +2,22 @@ import Foundation
 
 public protocol ObservationModel {
     /// Calculate z prediction:
+    ///
+    /// ```
     /// z'(k) = H * x'(k)
+    /// ```
     func apply(state x: Vector<Double>) -> Vector<Double>
     
     /// Calculate jacobian matrix:
+    ///
+    /// ```
     /// H(k) = dh(k)|
     ///        -----|
     ///         d(x)|
     ///             |x=X
+    /// ```
     func jacobian(state x: Vector<Double>) -> Matrix<Double>
 }
-
 
 public struct LinearObservationModel {
     public let state: Matrix<Double>
