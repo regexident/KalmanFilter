@@ -7,6 +7,9 @@
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
 
+## Project file
+*.xcodeproj
+
 ## Build generated
 build/
 DerivedData/
@@ -58,6 +61,10 @@ Package.resolved
 
 Carthage/Build
 
+# Accio dependency management
+Dependencies/
+.accio/
+
 # fastlane
 # It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
 # screenshots whenever they are needed.
@@ -76,56 +83,6 @@ fastlane/test_output
 iOSInjectionProject/
 
 # End of https://www.gitignore.io/api/swift
-
-# Created by https://www.gitignore.io/api/swiftpackagemanager
-# Edit at https://www.gitignore.io/?templates=swiftpackagemanager
-
-### SwiftPackageManager ###
-Packages
-.build/
-xcuserdata
-DerivedData/
-*.xcodeproj
-
-# End of https://www.gitignore.io/api/swiftpackagemanager
-
-# Created by https://www.gitignore.io/api/xcode
-# Edit at https://www.gitignore.io/?templates=xcode
-
-### Xcode ###
-# Xcode
-#
-# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
-
-## User settings
-xcuserdata/
-
-## compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
-*.xcscmblueprint
-*.xccheckout
-
-## compatibility with Xcode 3 and earlier (ignoring not required starting Xcode 4)
-build/
-DerivedData/
-*.moved-aside
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-
-### Xcode Patch ###
-*.xcodeproj/*
-!*.xcodeproj/project.pbxproj
-!*.xcodeproj/xcshareddata/
-!*.xcworkspace/contents.xcworkspacedata
-/*.gcno
-**/xcshareddata/WorkspaceSettings.xcsettings
-
-# End of https://www.gitignore.io/api/xcode
 
 # Created by https://www.gitignore.io/api/visualstudiocode
 # Edit at https://www.gitignore.io/?templates=visualstudiocode
