@@ -16,15 +16,15 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
         
         let dimensions = Dimensions(
             state: 4, // [position x, position y, h, velocity]
-            input: 2, // [heading, velocity]
+            control: 2, // [heading, velocity]
             output: 2 // [position x, position y]
         )
         
         let time = 0.1 // time delta
         
-        let motionModel = NonlinearMotionModel(dimensions: dimensions) { state, input in
+        let motionModel = NonlinearMotionModel(dimensions: dimensions) { state, control in
             let (x, y) = (state[0], state[1]) // pos-x, pos-y
-            let (h, v) = (input[0], input[1]) // heading, velocity
+            let (h, v) = (control[0], control[1]) // heading, velocity
             let t = time // delta time
             return [
                 x + v * t * cos(h),
@@ -81,17 +81,17 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
         )
     }
     
-    func filter(input: (Int) -> Vector<Double>) -> Double {
+    func filter(control: (Int) -> Vector<Double>) -> Double {
         let model = self.model
         let estimate = self.estimate()
         let initialState = self.initialState
         
         let sampleCount = 200
-        let inputs: [Vector<Double>] = (0..<sampleCount).map(input)
+        let controls: [Vector<Double>] = (0..<sampleCount).map(control)
         
         let states = self.makeSignal(
             initial: initialState,
-            inputs: inputs,
+            controls: controls,
             model: model.motionModel,
             processNoise: model.noiseModel.process
         )
@@ -105,8 +105,8 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
         
         let kalmanFilter = KalmanFilter(estimate: estimate, model: model)
         
-        let filteredStates: [Vector<Double>] = Swift.zip(inputs, outputs).map { input, output in
-            return kalmanFilter.filter(output: output, input: input).state
+        let filteredStates: [Vector<Double>] = Swift.zip(controls, outputs).map { control, output in
+            return kalmanFilter.filter(output: output, control: control).state
         }
         
 //        self.printSheet(unfiltered: states, filtered: filteredStates, measured: outputs)

@@ -6,7 +6,7 @@ final class LocalizationTests: XCTestCase {
     let model: Model = {
         let dimensions = Dimensions(
             state: 4, // [target position x, target position y, self position x, self position y]
-            input: 2, // [self position x, self position y]
+            control: 2, // [self position x, self position y]
             output: 1 // [distance]
         )
         
@@ -17,7 +17,7 @@ final class LocalizationTests: XCTestCase {
                 [0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0],
             ],
-            input: [
+            control: [
                 [0.0, 0.0],
                 [0.0, 0.0],
                 [1.0, 0.0],
@@ -66,7 +66,7 @@ final class LocalizationTests: XCTestCase {
         
         let interval = 0.1
         let sampleCount = 200
-        let inputs: [Vector<Double>] = (0..<sampleCount).map { i in
+        let controls: [Vector<Double>] = (0..<sampleCount).map { i in
             let a = Double(i) * interval
             let r = 7.5
             let x = r * sin(a)
@@ -76,7 +76,7 @@ final class LocalizationTests: XCTestCase {
         
         let states = self.makeSignal(
             initial: estimate.state,
-            inputs: inputs,
+            controls: controls,
             model: model.motionModel,
             processNoise: model.noiseModel.process
         )
@@ -90,8 +90,8 @@ final class LocalizationTests: XCTestCase {
         
         let kalmanFilter = KalmanFilter(estimate: estimate, model: model)
 
-        let filteredStates: [Vector<Double>] = Swift.zip(inputs, outputs).map { input, output in
-            return kalmanFilter.filter(output: output, input: input).state
+        let filteredStates: [Vector<Double>] = Swift.zip(controls, outputs).map { control, output in
+            return kalmanFilter.filter(output: output, control: control).state
         }
         
 //        self.printSheet(unfiltered: states, filtered: filteredStates, measured: outputs)

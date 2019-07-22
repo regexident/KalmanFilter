@@ -5,7 +5,7 @@ import KalmanFilter
 extension XCTestCase {
     internal func makeSignal<S>(
         initial initialState: Vector<Double>,
-        inputs: S,
+        controls: S,
         model: MotionModel,
         processNoise covariance: Matrix<Double>
     ) -> [Vector<Double>]
@@ -14,8 +14,8 @@ extension XCTestCase {
         var signal: [Vector<Double>] = [initialState]
         var state = initialState
         
-        for input in inputs {
-            state = model.apply(state: state, input: input)
+        for control in controls {
+            state = model.apply(state: state, control: control)
             let standardNoise: Vector<Double> = Vector(gaussianRandom: state.rows)
             let noise: Vector<Double> = covariance * standardNoise
             signal.append(state + noise)

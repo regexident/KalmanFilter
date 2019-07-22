@@ -12,7 +12,7 @@ public protocol MotionModel {
     /// ```
     /// x'(k) = f(x(k-1))
     /// ```
-    func apply(state x: Vector<Double>, input u: Vector<Double>) -> Vector<Double>
+    func apply(state x: Vector<Double>, control u: Vector<Double>) -> Vector<Double>
     
     /// Calculate jacobian matrix:
     ///
@@ -22,30 +22,30 @@ public protocol MotionModel {
     ///         d(x)|
     ///             |x=X
     /// ```
-    func jacobian(state x: Vector<Double>, input u: Vector<Double>) -> Matrix<Double>
+    func jacobian(state x: Vector<Double>, control u: Vector<Double>) -> Matrix<Double>
 }
 
 public class LinearMotionModel {
     public let state: Matrix<Double>
-    public let input: Matrix<Double>
+    public let control: Matrix<Double>
     
     public init(
         state: Matrix<Double>,
-        input: Matrix<Double>
+        control: Matrix<Double>
     ) {
         self.state = state
-        self.input = input
+        self.control = control
     }
 }
 
 extension LinearMotionModel: MotionModel {
-    public func apply(state x: Vector<Double>, input u: Vector<Double>) -> Vector<Double> {
+    public func apply(state x: Vector<Double>, control u: Vector<Double>) -> Vector<Double> {
         let a = self.state
-        let b = self.input
+        let b = self.control
         return (a * x) + (b * u)
     }
     
-    public func jacobian(state x: Vector<Double>, input u: Vector<Double>) -> Matrix<Double> {
+    public func jacobian(state x: Vector<Double>, control u: Vector<Double>) -> Matrix<Double> {
         return self.state
     }
 }
@@ -58,9 +58,9 @@ public class NonlinearMotionModel {
         dimensions: Dimensions,
         function: @escaping (Vector<Double>, Vector<Double>) -> Vector<Double>
     ) {
-        self.init(dimensions: dimensions, function: function) { state, input in
+        self.init(dimensions: dimensions, function: function) { state, control in
             let jacobian = Jacobian(shape: (rows: dimensions.state, columns: dimensions.state))
-            return jacobian.numeric(state: state) { function($0, input) }
+            return jacobian.numeric(state: state) { function($0, control) }
         }
     }
     
@@ -75,11 +75,11 @@ public class NonlinearMotionModel {
 }
 
 extension NonlinearMotionModel: MotionModel {
-    public func apply(state x: Vector<Double>, input u: Vector<Double>) -> Vector<Double> {
+    public func apply(state x: Vector<Double>, control u: Vector<Double>) -> Vector<Double> {
         return self.function(x, u)
     }
     
-    public func jacobian(state x: Vector<Double>, input u: Vector<Double>) -> Matrix<Double> {
+    public func jacobian(state x: Vector<Double>, control u: Vector<Double>) -> Matrix<Double> {
         return self.jacobian(x, u)
     }
 }

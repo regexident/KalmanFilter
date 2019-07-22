@@ -11,7 +11,7 @@ final class LinearAccelerationModelTests: XCTestCase {
         
         let dimensions = Dimensions(
             state: 6, // [position x, position y, velocity x, velocity y, acceleration x, acceleration y]
-            input: 2, // [acceleration x, acceleration y]
+            control: 2, // [acceleration x, acceleration y]
             output: 2 // [position x, position y]
         )
         
@@ -26,7 +26,7 @@ final class LinearAccelerationModelTests: XCTestCase {
                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             ],
-            input: [
+            control: [
                 [0.0, 0.0],
                 [0.0, 0.0],
                 [0.5 * time * time, 0.0],
@@ -86,17 +86,17 @@ final class LinearAccelerationModelTests: XCTestCase {
         )
     }
     
-    func filter(input: (Int) -> Vector<Double>) -> Double {
+    func filter(control: (Int) -> Vector<Double>) -> Double {
         let model = self.model
         let estimate = self.estimate()
         let initialState = self.initialState
         
         let sampleCount = 200
-        let inputs: [Vector<Double>] = (0..<sampleCount).map(input)
+        let controls: [Vector<Double>] = (0..<sampleCount).map(control)
         
         let states = self.makeSignal(
             initial: initialState,
-            inputs: inputs,
+            controls: controls,
             model: model.motionModel,
             processNoise: model.noiseModel.process
         )
@@ -110,8 +110,8 @@ final class LinearAccelerationModelTests: XCTestCase {
         
         let kalmanFilter = KalmanFilter(estimate: estimate, model: model)
         
-        let filteredStates: [Vector<Double>] = Swift.zip(inputs, outputs).map { input, output in
-            return kalmanFilter.filter(output: output, input: input).state
+        let filteredStates: [Vector<Double>] = Swift.zip(controls, outputs).map { control, output in
+            return kalmanFilter.filter(output: output, control: control).state
         }
         
 //        self.printSheet(unfiltered: states, filtered: filteredStates, measured: outputs)

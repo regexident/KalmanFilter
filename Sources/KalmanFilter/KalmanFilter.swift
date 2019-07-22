@@ -18,18 +18,18 @@ public class KalmanFilter {
         self.identity = Matrix(identity: dimesions.state)
     }
     
-    public func filter(output z: Vector<Double>, input u: Vector<Double>) -> Estimate {
-        let (prediction: x, probability: p) = self.predict(input: u)
-        return self.update(prediction: x, probability: p, output: z, input: u)
+    public func filter(output z: Vector<Double>, control u: Vector<Double>) -> Estimate {
+        let (prediction: x, probability: p) = self.predict(control: u)
+        return self.update(prediction: x, probability: p, output: z, control: u)
     }
 
-    /// Predicts next state using current state and input and calculates probability estimate.
+    /// Predicts next state using current state and control and calculates probability estimate.
     ///
     /// ```
     /// x'(k) = A * x(k-1) + B * u(k).
     /// P'(k) = A * P(k-1) * At + Q
     /// ```
-    public func predict(input u: Vector<Double>) -> (prediction: Vector<Double>, probability: Matrix<Double>) {
+    public func predict(control u: Vector<Double>) -> (prediction: Vector<Double>, probability: Matrix<Double>) {
         let estimate = self.estimate
         let model = self.model
         
@@ -39,8 +39,8 @@ public class KalmanFilter {
         let q = model.noiseModel.process
         
         // Calculate x prediction and A: x'(k), A
-        let xP = model.motionModel.apply(state: x, input: u)
-        let a = model.motionModel.jacobian(state: x, input: u)
+        let xP = model.motionModel.apply(state: x, control: u)
+        let a = model.motionModel.jacobian(state: x, control: u)
         
         let aT = a.transposed()
         
@@ -62,7 +62,7 @@ public class KalmanFilter {
         prediction x: Vector<Double>,
         probability p: Matrix<Double>,
         output z: Vector<Double>,
-        input u: Vector<Double>
+        control u: Vector<Double>
     ) -> Estimate {
         let model = self.model
                 

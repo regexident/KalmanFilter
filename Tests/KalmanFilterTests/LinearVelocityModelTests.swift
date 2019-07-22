@@ -11,7 +11,7 @@ final class LinearVelocityModelTests: XCTestCase {
         
         let dimensions = Dimensions(
             state: 4, // [position x, position y, velocity x, velocity y]
-            input: 2, // [velocity x, velocity y]
+            control: 2, // [velocity x, velocity y]
             output: 2 // [position x, position y]
         )
         
@@ -24,7 +24,7 @@ final class LinearVelocityModelTests: XCTestCase {
                 [0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0],
             ],
-            input: [
+            control: [
                 [0.0, 0.0],
                 [0.0, 0.0],
                 [time, 0.0],
@@ -78,16 +78,16 @@ final class LinearVelocityModelTests: XCTestCase {
         )
     }
     
-    func filter(input: (Int) -> Vector<Double>) -> Double {
+    func filter(control: (Int) -> Vector<Double>) -> Double {
         let model = self.model
         let estimate = self.estimate()
         
         let sampleCount = 200
-        let inputs: [Vector<Double>] = (0..<sampleCount).map(input)
+        let controls: [Vector<Double>] = (0..<sampleCount).map(control)
         
         let states = self.makeSignal(
             initial: estimate.state,
-            inputs: inputs,
+            controls: controls,
             model: model.motionModel,
             processNoise: model.noiseModel.process
         )
@@ -101,8 +101,8 @@ final class LinearVelocityModelTests: XCTestCase {
         
         let kalmanFilter = KalmanFilter(estimate: estimate, model: model)
         
-        let filteredStates: [Vector<Double>] = Swift.zip(inputs, outputs).map { input, output in
-            return kalmanFilter.filter(output: output, input: input).state
+        let filteredStates: [Vector<Double>] = Swift.zip(controls, outputs).map { control, output in
+            return kalmanFilter.filter(output: output, control: control).state
         }
         
 //        self.printSheet(unfiltered: states, filtered: filteredStates, measured: outputs)
