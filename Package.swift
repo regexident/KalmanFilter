@@ -9,7 +9,10 @@ let package = Package(
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(
             name: "KalmanFilter",
-            targets: ["KalmanFilter"]),
+            targets: [
+                "KalmanFilter"
+            ]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/mattt/Surge.git", .upToNextMajor(from: "2.0.0")),
@@ -21,9 +24,13 @@ let package = Package(
             name: "KalmanFilter",
             dependencies: [
                 "Surge",
-            ]),
+            ]
+        ),
         .testTarget(
             name: "KalmanFilterTests",
-            dependencies: ["KalmanFilter"]),
+            dependencies: [
+                "KalmanFilter"
+            ]
+        ),
     ]
 )
