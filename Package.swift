@@ -10,11 +10,12 @@ let package = Package(
         .library(
             name: "KalmanFilter",
             targets: [
-                "KalmanFilter"
+                "KalmanFilter",
             ]
         ),
     ],
     dependencies: [
+        .package(url: "https://github.com/regexident/BayesFilter", .branch("master")),
         .package(url: "https://github.com/mattt/Surge.git", .upToNextMajor(from: "2.0.0")),
     ],
     targets: [
@@ -23,13 +24,14 @@ let package = Package(
         .target(
             name: "KalmanFilter",
             dependencies: [
+                "BayesFilter",
                 "Surge",
             ]
         ),
         .testTarget(
             name: "KalmanFilterTests",
             dependencies: [
-                "KalmanFilter"
+                "KalmanFilter",
             ]
         ),
     ]

@@ -74,8 +74,8 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
         0.0, // Velocity
     ]
     
-    func estimate() -> Estimate {
-        return Estimate(
+    func estimate() -> (state: Vector<Double>, covariance: Matrix<Double>) {
+        return (
             state: self.initialState,
             covariance: Matrix(diagonal: 1.0, size: 4)
         )

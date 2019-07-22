@@ -37,7 +37,7 @@ final class LocalizationTests: XCTestCase {
             process: Matrix(diagonal: 0.0, size: 4),
             observation: {
                 return Matrix(
-                    diagonal: 2.0,
+                    diagonal: 0.5,
                     size: dimensions.observation
                 ).squared()
             }()
@@ -54,7 +54,7 @@ final class LocalizationTests: XCTestCase {
     func testModel() {
         let model = self.model
         
-        let estimate = Estimate(
+        let estimate: (state: Vector<Double>, covariance: Matrix<Double>) = (
             state: [
                 5.0, // Target Position X
                 10.0, // Target Position Y
@@ -64,8 +64,8 @@ final class LocalizationTests: XCTestCase {
             covariance: Matrix(diagonal: 1.0, size: model.dimensions.state)
         )
         
-        let interval = 0.1
-        let sampleCount = 200
+        let interval = 0.05
+        let sampleCount = 500
         let controls: [Vector<Double>] = (0..<sampleCount).map { i in
             let a = Double(i) * interval
             let r = 7.5
