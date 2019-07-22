@@ -44,7 +44,7 @@ public class NonlinearObservationModel {
     
     public convenience init(dimensions: Dimensions, function: @escaping (Vector<Double>) -> Vector<Double>) {
         self.init(function: function) { state in
-            let jacobian = Jacobian(shape: (rows: dimensions.output, columns: dimensions.state))
+            let jacobian = Jacobian(shape: (rows: dimensions.observation, columns: dimensions.state))
             return jacobian.numeric(state: state) { function($0) }
         }
     }

@@ -17,7 +17,7 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
         let dimensions = Dimensions(
             state: 4, // [position x, position y, h, velocity]
             control: 2, // [heading, velocity]
-            output: 2 // [position x, position y]
+            observation: 2 // [position x, position y]
         )
         
         let time = 0.1 // time delta
@@ -53,9 +53,9 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
                 ]
                 return (qs * qs.transposed()).squared()
         }(),
-            output: Matrix(
+            observation: Matrix(
                 diagonal: 2.0,
-                size: dimensions.output
+                size: dimensions.observation
             ).squared()
         )
         
@@ -96,20 +96,20 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
             processNoise: model.noiseModel.process
         )
         
-        let outputs: [Vector<Double>] = states.map { state in
-            let output: Vector<Double> = model.observationModel.apply(state: state)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: model.dimensions.output)
-            let noise: Vector<Double> = model.noiseModel.output * standardNoise
-            return output + noise
+        let observations: [Vector<Double>] = states.map { state in
+            let observation: Vector<Double> = model.observationModel.apply(state: state)
+            let standardNoise: Vector<Double> = Vector(gaussianRandom: model.dimensions.observation)
+            let noise: Vector<Double> = model.noiseModel.observation * standardNoise
+            return observation + noise
         }
         
         let kalmanFilter = KalmanFilter(estimate: estimate, model: model)
         
-        let filteredStates: [Vector<Double>] = Swift.zip(controls, outputs).map { control, output in
-            return kalmanFilter.filter(output: output, control: control).state
+        let filteredStates: [Vector<Double>] = Swift.zip(controls, observations).map { control, observation in
+            return kalmanFilter.filter(observation: observation, control: control).state
         }
         
-//        self.printSheet(unfiltered: states, filtered: filteredStates, measured: outputs)
+//        self.printSheet(unfiltered: states, filtered: filteredStates, measured: observations)
         
         let (similarity, _) = autoCorrelation(between: states, and: filteredStates, within: 10) { $0.distance(to: $1) }
         

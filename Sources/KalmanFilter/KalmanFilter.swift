@@ -18,9 +18,9 @@ public class KalmanFilter {
         self.identity = Matrix(identity: dimesions.state)
     }
     
-    public func filter(output z: Vector<Double>, control u: Vector<Double>) -> Estimate {
+    public func filter(observation z: Vector<Double>, control u: Vector<Double>) -> Estimate {
         let (prediction: x, probability: p) = self.predict(control: u)
-        return self.update(prediction: x, probability: p, output: z, control: u)
+        return self.update(prediction: x, probability: p, observation: z, control: u)
     }
 
     /// Predicts next state using current state and control and calculates probability estimate.
@@ -61,12 +61,12 @@ public class KalmanFilter {
     public func update(
         prediction x: Vector<Double>,
         probability p: Matrix<Double>,
-        output z: Vector<Double>,
+        observation z: Vector<Double>,
         control u: Vector<Double>
     ) -> Estimate {
         let model = self.model
                 
-        let r = model.noiseModel.output
+        let r = model.noiseModel.observation
         let i = self.identity
         
         // Calculate z prediction and H: z'(k), H

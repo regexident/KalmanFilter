@@ -8,19 +8,19 @@ public class NoiseModel {
     /// Default: zero matrix.
     public var process: Matrix<Double>
     
-    /// Output noise matrix (aka `R`)
+    /// observation noise matrix (aka `R`)
     ///
-    /// This matrix implies the output error covariance,
+    /// This matrix implies the observation error covariance,
     /// based on the amount of sensor noise.
     ///
     /// Default: zero matrix.
-    public var output: Matrix<Double>
+    public var observation: Matrix<Double>
     
     public init(
         process: Matrix<Double>,
-        output: Matrix<Double>
+        observation: Matrix<Double>
     ) {
         self.process = process
-        self.output = output
+        self.observation = observation
     }
 }
