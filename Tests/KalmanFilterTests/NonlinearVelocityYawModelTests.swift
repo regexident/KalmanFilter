@@ -61,7 +61,7 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
                 ).squared()
         )
         
-        return Model(
+        return try! Model(
             dimensions: dimensions,
             motionModel: motionModel,
             observationModel: observationModel,
@@ -106,9 +106,10 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
             return observation + noise
         }
         
-        let kalmanFilter = KalmanFilter(estimate: estimate, model: model)
+        var kalmanFilter = KalmanFilter(estimate: estimate, model: model)
         
-        let filteredStates: [Vector<Double>] = Swift.zip(controls, observations).map { control, observation in
+        let filteredStates: [Vector<Double>] = Swift.zip(controls, observations).map { argument in
+            let (control, observation) = argument
             return kalmanFilter.filter(observation: observation, control: control).state
         }
         

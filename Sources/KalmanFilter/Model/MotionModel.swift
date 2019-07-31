@@ -23,9 +23,20 @@ public protocol MotionModel {
     ///             |x=X
     /// ```
     func jacobian(state x: Vector<Double>, control u: Vector<Double>) -> Matrix<Double>
+    
+    /// Validate the model for a given dimensional environment
+    ///
+    /// - Parameters:
+    ///   - dimensions: the environment's dimensions
+    func validate(for dimensions: Dimensions) throws
 }
 
 public class LinearMotionModel {
+    public enum Error: Swift.Error {
+        case state(MatrixError)
+        case control(MatrixError)
+    }
+    
     public let state: Matrix<Double>
     public let control: Matrix<Double>
     
@@ -48,9 +59,39 @@ extension LinearMotionModel: MotionModel {
     public func jacobian(state x: Vector<Double>, control u: Vector<Double>) -> Matrix<Double> {
         return self.state
     }
+    
+    public func validate(for dimensions: Dimensions) throws {
+        guard self.state.columns == dimensions.state else {
+            throw Error.state(.invalidColumnCount(
+                message: "Expected \(dimensions.state) columns in `self.state`, found \(self.state.columns)"
+            ))
+        }
+        
+        guard self.state.rows == dimensions.state else {
+            throw Error.state(.invalidRowCount(
+                message: "Expected \(dimensions.state) columns in `self.state`, found \(self.state.rows)"
+            ))
+        }
+        
+        guard self.control.columns == dimensions.control else {
+            throw Error.control(.invalidColumnCount(
+                message: "Expected \(dimensions.control) columns in `self.control`, found \(self.control.columns)"
+            ))
+        }
+        
+        guard self.control.rows == dimensions.state else {
+            throw Error.control(.invalidRowCount(
+                message: "Expected \(dimensions.state) columns in `self.control`, found \(self.state.rows)"
+            ))
+        }
+    }
 }
 
 public class NonlinearMotionModel {
+    public enum Error: Swift.Error {
+        case invalid(message: String)
+    }
+    
     public let function: (Vector<Double>, Vector<Double>) -> Vector<Double>
     public let jacobian: (Vector<Double>, Vector<Double>) -> Matrix<Double>
     
@@ -81,5 +122,20 @@ extension NonlinearMotionModel: MotionModel {
     
     public func jacobian(state x: Vector<Double>, control u: Vector<Double>) -> Matrix<Double> {
         return self.jacobian(x, u)
+    }
+    
+    public func validate(for dimensions: Dimensions) throws {
+        #if DEBUG
+        let stateBefore: Vector<Double> = .init(rows: dimensions.state)
+        let control: Vector<Double> = .init(rows: dimensions.control)
+        
+        let stateAfter = self.apply(state: stateBefore, control: control)
+        
+        if stateAfter.rows != dimensions.state {
+            throw Error.invalid(
+                message: "Expected output vector of \(dimensions.state) rows, found \(stateAfter.rows)"
+            )
+        }
+        #endif
     }
 }

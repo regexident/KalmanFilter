@@ -17,9 +17,19 @@ public protocol ObservationModel {
     ///             |x=X
     /// ```
     func jacobian(state x: Vector<Double>) -> Matrix<Double>
+    
+    /// Validate the model for a given dimensional environment
+    ///
+    /// - Parameters:
+    ///   - dimensions: the environment's dimensions
+    func validate(for dimensions: Dimensions) throws
 }
 
 public struct LinearObservationModel {
+    public enum Error: Swift.Error {
+        case state(MatrixError)
+    }
+    
     public let state: Matrix<Double>
     
     public init(state: Matrix<Double>) {
@@ -36,9 +46,27 @@ extension LinearObservationModel: ObservationModel {
     public func jacobian(state x: Vector<Double>) -> Matrix<Double> {
         return self.state
     }
+    
+    public func validate(for dimensions: Dimensions) throws {
+        guard self.state.columns == dimensions.state else {
+            throw Error.state(.invalidColumnCount(
+                message: "Expected \(dimensions.state) columns in `self.state`, found \(self.state.columns)"
+            ))
+        }
+        
+        guard self.state.rows == dimensions.observation else {
+            throw Error.state(.invalidRowCount(
+                message: "Expected \(dimensions.observation) columns in `self.state`, found \(self.state.rows)"
+            ))
+        }
+    }
 }
 
 public class NonlinearObservationModel {
+    public enum Error: Swift.Error {
+        case invalid(message: String)
+    }
+    
     public let function: (Vector<Double>) -> Vector<Double>
     public let jacobian: (Vector<Double>) -> Matrix<Double>
     
@@ -65,5 +93,19 @@ extension NonlinearObservationModel: ObservationModel {
     
     public func jacobian(state x: Vector<Double>) -> Matrix<Double> {
         return self.jacobian(x)
+    }
+    
+    public func validate(for dimensions: Dimensions) throws {
+        #if DEBUG
+        let state: Vector<Double> = .init(rows: dimensions.state)
+        
+        let observation = self.apply(state: state)
+        
+        if observation.rows != dimensions.observation {
+            throw Error.invalid(
+                message: "Expected output vector of \(dimensions.observation) rows, found \(observation.rows)"
+            )
+        }
+        #endif
     }
 }
