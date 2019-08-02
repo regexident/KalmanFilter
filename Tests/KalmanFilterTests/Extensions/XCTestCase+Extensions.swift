@@ -29,40 +29,35 @@ extension XCTestCase {
     }
     
     internal func printSheet(
-        unfiltered2D: [Vector<Double>],
-        filtered2D: [Vector<Double>],
-        measured2D: [Vector<Double>]
+        trueStates: [Vector<Double>],
+        estimatedStates: [Vector<Double>],
+        observations: [Vector<Double>]
     ) {
-        assert(measured2D.count == unfiltered2D.count)
-        assert(measured2D.count == filtered2D.count)
+        assert(observations.count == trueStates.count)
+        assert(observations.count == estimatedStates.count)
         
-        for i in 0..<measured2D.count {
-            let (unfiltered, filtered, measured) = (unfiltered2D[i], filtered2D[i], measured2D[i])
-            
-            let (x1, y1) = (unfiltered[0], unfiltered[1])
-            let (x2, y2) = (filtered[0], filtered[1])
-            let (x3, y3) = (measured[0], measured[1])
-            
-            print("\(x1),\(y1),\(x2),\(y2),\(x3),\(y3)")
+        guard observations.count > 0 else {
+            return
         }
-    }
-    
-    internal func printSheet(
-        unfiltered2D: [Vector<Double>],
-        filtered2D: [Vector<Double>],
-        measured1D: [Vector<Double>]
-    ) {
-        assert(measured1D.count == unfiltered2D.count)
-        assert(measured1D.count == filtered2D.count)
         
-        for i in 0..<measured1D.count {
-            let (unfiltered, filtered, measured) = (unfiltered2D[i], filtered2D[i], measured1D[i])
+        let headerCellsTrueStates = (0..<trueStates[0].rows).map { "Unfiltered \($0)" }.joined(separator: ",")
+        let headerCellsEstimatedStates = (0..<estimatedStates[0].rows).map { "Filtered \($0)" }.joined(separator: ",")
+        let headerCellsObservations = (0..<observations[0].rows).map { "Observations \($0)" }.joined(separator: ",")
+        let headerRow = [
+            "Time", headerCellsTrueStates, headerCellsEstimatedStates, headerCellsObservations
+        ].joined(separator: ",")
+        
+        print(headerRow)
+        
+        for i in 0..<observations.count {
+            let cellsTrueStates = trueStates[i].scalars.map { "\($0)" }.joined(separator: ",")
+            let cellsEstimatedStates = estimatedStates[i].scalars.map { "\($0)" }.joined(separator: ",")
+            let cellsObservations = observations[i].scalars.map { "\($0)" }.joined(separator: ",")
+            let row = [
+                "\(i)", cellsTrueStates, cellsEstimatedStates, cellsObservations
+            ].joined(separator: ",")
             
-            let (x1, y1) = (unfiltered[0], unfiltered[1])
-            let (x2, y2) = (filtered[0], filtered[1])
-            let z3 = (measured[0])
-            
-            print("\(x1),\(y1),\(x2),\(y2),\(z3)")
+            print(row)
         }
     }
     

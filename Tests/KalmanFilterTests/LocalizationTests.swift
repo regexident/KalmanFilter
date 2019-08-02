@@ -34,7 +34,7 @@ final class LocalizationTests: XCTestCase {
         }
         
         let noiseModel = NoiseModel(
-            process: Matrix(diagonal: 0.0, size: 4),
+            process: Matrix(diagonal: 0.0, size: dimensions.state),
             observation: {
                 return Matrix(
                     diagonal: 0.5,
@@ -95,19 +95,19 @@ final class LocalizationTests: XCTestCase {
             return kalmanFilter.filter(observation: observation, control: control).state
         }
         
-//        self.printSheet(unfiltered: states, filtered: filteredStates, measured: observations)
+//        self.printSheetAndFail(trueStates: states, estimatedStates: filteredStates, observations: observations)
         
         let (similarity, _) = autoCorrelation(between: states, and: filteredStates, within: 10) { $0.distance(to: $1) }
 
         XCTAssertLessThan(similarity, 5.0)
     }
     
-    private func printSheet(
-        unfiltered: [Vector<Double>],
-        filtered: [Vector<Double>],
-        measured: [Vector<Double>]
+    private func printSheetAndFail(
+        trueStates: [Vector<Double>],
+        estimatedStates: [Vector<Double>],
+        observations: [Vector<Double>]
     ) {
-        self.printSheet(unfiltered2D: unfiltered, filtered2D: filtered, measured1D: measured)
+        self.printSheet(trueStates: trueStates, estimatedStates: estimatedStates, observations: observations)
         
         XCTFail("Printing found in test")
     }

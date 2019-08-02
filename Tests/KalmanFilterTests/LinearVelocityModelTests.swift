@@ -106,7 +106,7 @@ final class LinearVelocityModelTests: XCTestCase {
             return kalmanFilter.filter(observation: observation, control: control).state
         }
         
-//        self.printSheet(unfiltered: states, filtered: filteredStates, measured: observations)
+//        self.printSheetAndFail(trueStates: states, estimatedStates: filteredStates, observations: observations)
         
         let (similarity, _) = autoCorrelation(between: states, and: filteredStates, within: 10) { $0.distance(to: $1) }
         
@@ -135,12 +135,12 @@ final class LinearVelocityModelTests: XCTestCase {
         XCTAssertLessThan(similarity, 0.5)
     }
     
-    private func printSheet(
-        unfiltered: [Vector<Double>],
-        filtered: [Vector<Double>],
-        measured: [Vector<Double>]
+    private func printSheetAndFail(
+        trueStates: [Vector<Double>],
+        estimatedStates: [Vector<Double>],
+        observations: [Vector<Double>]
     ) {
-        self.printSheet(unfiltered2D: unfiltered, filtered2D: filtered, measured2D: measured)
+        self.printSheet(trueStates: trueStates, estimatedStates: estimatedStates, observations: observations)
         
         XCTFail("Printing found in test")
     }
