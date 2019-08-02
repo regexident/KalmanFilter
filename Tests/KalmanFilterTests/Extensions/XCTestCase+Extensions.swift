@@ -40,9 +40,9 @@ extension XCTestCase {
             return
         }
         
-        let headerCellsTrueStates = (0..<trueStates[0].rows).map { "Unfiltered \($0)" }.joined(separator: ",")
-        let headerCellsEstimatedStates = (0..<estimatedStates[0].rows).map { "Filtered \($0)" }.joined(separator: ",")
-        let headerCellsObservations = (0..<observations[0].rows).map { "Observations \($0)" }.joined(separator: ",")
+        let headerCellsTrueStates = (0..<trueStates[0].rows).map { "True \($0)" }.joined(separator: ",")
+        let headerCellsEstimatedStates = (0..<estimatedStates[0].rows).map { "Estimated \($0)" }.joined(separator: ",")
+        let headerCellsObservations = (0..<observations[0].rows).map { "Observation \($0)" }.joined(separator: ",")
         let headerRow = [
             "Time", headerCellsTrueStates, headerCellsEstimatedStates, headerCellsObservations
         ].joined(separator: ",")

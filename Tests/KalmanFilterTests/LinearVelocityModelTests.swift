@@ -86,7 +86,7 @@ final class LinearVelocityModelTests: XCTestCase {
         let controls: [Vector<Double>] = (0..<sampleCount).map(control)
         
         let states = self.makeSignal(
-            initial: estimate.state,
+            initial: self.initialState,
             controls: controls,
             model: model.motionModel,
             processNoise: model.noiseModel.process
@@ -106,7 +106,11 @@ final class LinearVelocityModelTests: XCTestCase {
             return kalmanFilter.filter(observation: observation, control: control).state
         }
         
-//        self.printSheetAndFail(trueStates: states, estimatedStates: filteredStates, observations: observations)
+//        self.printSheetAndFail(
+//            trueStates: states,
+//            estimatedStates: filteredStates,
+//            observations: observations
+//        )
         
         let (similarity, _) = autoCorrelation(between: states, and: filteredStates, within: 10) { $0.distance(to: $1) }
         

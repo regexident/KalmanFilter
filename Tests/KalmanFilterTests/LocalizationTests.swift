@@ -54,13 +54,15 @@ final class LocalizationTests: XCTestCase {
     func testModel() {
         let model = self.model
         
+        let initialState: Vector<Double> = [
+            5.0, // target position x
+            10.0, // target position y
+            0.0, // self position x
+            0.0, // self position y
+        ]
+        
         let estimate: (state: Vector<Double>, covariance: Matrix<Double>) = (
-            state: [
-                5.0, // Target Position X
-                10.0, // Target Position Y
-                0.0, // Self Position X
-                0.0, // Self Position Y
-            ],
+            state: initialState,
             covariance: Matrix(diagonal: 1.0, size: model.dimensions.state)
         )
         
@@ -95,7 +97,11 @@ final class LocalizationTests: XCTestCase {
             return kalmanFilter.filter(observation: observation, control: control).state
         }
         
-//        self.printSheetAndFail(trueStates: states, estimatedStates: filteredStates, observations: observations)
+//        self.printSheetAndFail(
+//            trueStates: states,
+//            estimatedStates: filteredStates,
+//            observations: observations
+//        )
         
         let (similarity, _) = autoCorrelation(between: states, and: filteredStates, within: 10) { $0.distance(to: $1) }
 

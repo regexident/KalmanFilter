@@ -113,7 +113,11 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
             return kalmanFilter.filter(observation: observation, control: control).state
         }
         
-//        self.printSheetAndFail(trueStates: states, estimatedStates: filteredStates, observations: observations)
+//        self.printSheetAndFail(
+//            trueStates: states,
+//            estimatedStates: filteredStates,
+//            observations: observations
+//        )
         
         let (similarity, _) = autoCorrelation(between: states, and: filteredStates, within: 10) { $0.distance(to: $1) }
         
