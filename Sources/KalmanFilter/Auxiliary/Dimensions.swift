@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Dimensions {
+public struct Dimensions: Hashable, Equatable {
     public let state: Int
     public let control: Int
     public let observation: Int
