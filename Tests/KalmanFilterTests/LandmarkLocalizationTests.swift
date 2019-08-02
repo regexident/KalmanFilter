@@ -21,43 +21,59 @@ final class LandmarkLocalizationTests: XCTestCase {
         }
     }
     
+    let time: Double = 1.0 // time delta in seconds
+    
+    let velocity: (x: Double, y: Double) = (x: 0.125, y: 0.125) // in meters per second
+    
     let dimensions = Dimensions(
-        state: 2, // [target position x, target position y]
-        control: 2, // [translation x, translation y]
+        state: 4, // [position x, position y, velocity x, velocity y]
+        control: 2, // [velocity x, velocity y]
         observation: 1 // [distance to landmark]
     )
     
     func motionModel(dimensions: Dimensions) -> MotionModel {
+        let t = self.time
         return LinearMotionModel(
             state: [
-                [1.0, 0.0],
-                [0.0, 1.0],
+                [1.0, 0.0, t, 0.0],
+                [0.0, 1.0, 0.0, t],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
             ],
             control: [
-                [1.0, 0.0],
-                [0.0, 1.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [t, 0.0],
+                [0.0, t],
             ]
         )
     }
     
     func noiseModel(dimensions: Dimensions) -> NoiseModel {
         return NoiseModel(
-            process: Matrix(diagonal: 0.0, size: dimensions.state),
-            observation: {
-                return Matrix(
-                    diagonal: 0.5,
-                    size: self.dimensions.observation
-                ).squared()
-            }()
+            process: {
+                let t = self.time
+                let accel = 0.25 // max expected acceleration in m/sec^2
+                let qs: Matrix = [
+                    [accel * 0.5 * t * t], // translation in m (double-integrated acceleration)
+                    [accel * 0.5 * t * t], // translation in m (double-integrated acceleration)
+                    [accel * t], // velocity in m/s (integrated acceleration)
+                    [accel * t], // velocity in m/s (integrated acceleration)
+                ]
+                return (qs * qs.transposed()).squared()
+            }(),
+            observation: Matrix(
+                diagonal: 0.5, // 2.0,
+                size: self.dimensions.observation
+            ).squared()
         )
     }
     
     func observationModel(landmark: Landmark, dimensions: Dimensions) -> ObservationModel {
         NonlinearObservationModel(dimensions: dimensions) { state in
-            let targetPosition: Vector<Double> = state
+            let targetPosition: Vector<Double> = [state[0], state[1]]
             let landmarkPosition: Vector<Double> = landmark.location
-            let delta = targetPosition - landmarkPosition
-            let dist = delta.magnitude
+            let dist = targetPosition.distance(to: landmarkPosition)
             return [dist]
         }
     }
@@ -75,31 +91,28 @@ final class LandmarkLocalizationTests: XCTestCase {
         )
     }
 
-    func testModel() {
+    func filter(control: (Int) -> Vector<Double>) -> Double {
         let initialState: Vector<Double> = [
-            5.0, // Target Position X
-            10.0, // Target Position Y
+            0.0, // target position X
+            0.0, // target position Y
+            0.0, // target velocity x
+            0.0, // target velocity y
         ]
         
         let estimate: (state: Vector<Double>, covariance: Matrix<Double>) = (
-            state: [
-                7.0, // Target Position X
-                7.0, // Target Position Y
-            ],
+            state: initialState,
             covariance: Matrix(diagonal: 10.0, size: self.dimensions.state)
         )
         
         let landmarks: [Landmark] = [
-            Landmark(location: [-1.0, -1.0]),
-            Landmark(location: [-1.0, 1.0]),
-            Landmark(location: [1.0, -1.0]),
-            Landmark(location: [1.0, 1.0]),
+            Landmark(location: [-10.0, -10.0]),
+            Landmark(location: [-10.0, 10.0]),
+            Landmark(location: [10.0, -10.0]),
+            Landmark(location: [10.0, 10.0]),
         ]
 
         let sampleCount = 500
-        let controls: [Vector<Double>] = (0..<sampleCount).map { i in
-            return Vector(column: [0.0, 0.0])
-        }
+        let controls: [Vector<Double>] = (0..<sampleCount).map(control)
         
         let motionModel = self.motionModel(dimensions: self.dimensions)
         let noiseModel = self.noiseModel(dimensions: self.dimensions)
@@ -114,7 +127,6 @@ final class LandmarkLocalizationTests: XCTestCase {
         let observations: [[Vector<Double>]] = states.map { state in
             landmarks.map { landmark in
                 let observationModel = self.observationModel(landmark: landmark, dimensions: self.dimensions)
-                
                 let observation: Vector<Double> = observationModel.apply(state: state)
                 let standardNoise: Vector<Double> = Vector(gaussianRandom: self.dimensions.observation)
                 let noise: Vector<Double> = noiseModel.observation * standardNoise
@@ -142,15 +154,47 @@ final class LandmarkLocalizationTests: XCTestCase {
             return kalmanFilter.estimate.state
         }
         
-        let flattenedObservations = observations.map { observations in
-            Vector(column: observations.map { $0[0] })
-        }
-
-        // self.printSheetAndFail(trueStates: states, estimatedStates: filteredStates, observations: flattenedObservations)
+//        self.printSheetAndFail(
+//            trueStates: states,
+//            estimatedStates: filteredStates,
+//            observations: observations.map { observations in
+//                Vector(column: observations.map { $0[0] })
+//            }
+//        )
 
         let (similarity, _) = autoCorrelation(between: states, and: filteredStates, within: 10) { $0.distance(to: $1) }
 
-        XCTAssertLessThan(similarity, 5.0)
+        return similarity
+    }
+    
+    func testStaticModel() {
+        let similarity = self.filter { i in
+            return Vector(column: [0.0, 0.0])
+        }
+        
+        XCTAssertLessThan(similarity, 0.5)
+    }
+    
+    func testConstantModel() {
+        let similarity = self.filter { i in
+            let x = self.velocity.x
+            let y = self.velocity.y
+            return Vector(column: [x, y])
+        }
+        
+        XCTAssertLessThan(similarity, 0.5)
+    }
+    
+    func testVariableModel() {
+        let similarity = self.filter { i in
+            let waveX = sin(Double(i) * 0.1)
+            let waveY = cos(Double(i) * 0.1)
+            let x = self.velocity.x * waveX
+            let y = self.velocity.y * waveY
+            return Vector(column: [x, y])
+        }
+        
+        XCTAssertLessThan(similarity, 10.0)
     }
 
     private func printSheetAndFail(
@@ -164,6 +208,8 @@ final class LandmarkLocalizationTests: XCTestCase {
     }
 
     static var allTests = [
-        ("testModel", testModel),
+        ("testStaticModel", testStaticModel),
+        ("testConstantModel", testConstantModel),
+        ("testVariableModel", testVariableModel),
     ]
 }
