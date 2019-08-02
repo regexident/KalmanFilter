@@ -1,8 +1,79 @@
-//
-//  File.swift
-//  
-//
-//  Created by Vincent Esche on 8/2/19.
-//
-
 import Foundation
+
+import BayesFilter
+
+public struct Contextual<Context, Payload> {
+    let context: Context
+    let payload: Payload
+}
+
+public class ContextSwitchingKalmanFilter<Context: Hashable>: BayesFilter {
+    public typealias Observation = KalmanFilter.Observation
+    public typealias Control = Contextual<Context, KalmanFilter.Control>
+    public typealias Estimate = KalmanFilter.Estimate
+    
+    public typealias Provider = (Context, Dimensions, Estimate) -> KalmanFilter
+    
+    public let dimensions: Dimensions
+    public var estimate: Estimate
+    private var provider: Provider
+    
+    private var kalmanFilters: [Context: KalmanFilter] = [:]
+    
+    public init(
+        dimensions: Dimensions,
+        estimate: Estimate,
+        provider: @escaping Provider
+    ) {
+        assert(estimate.state.rows == dimensions.state)
+        assert(estimate.covariance.columns == dimensions.state)
+        assert(estimate.covariance.rows == dimensions.state)
+        
+        self.dimensions = dimensions
+        self.estimate = estimate
+        self.provider = provider
+    }
+    
+    public func predict(
+        control: Contextual<Context, KalmanFilter.Control>
+    ) -> KalmanFilter.Estimate {
+        let kalmanFilter = self.kalmanFilter(
+            for: control.context,
+            dimensions: self.dimensions
+        )
+        return kalmanFilter.predict(control: control.payload)
+    }
+    
+    public func update(
+        prediction: KalmanFilter.Estimate,
+        observation: KalmanFilter.Observation,
+        control: Contextual<Context, KalmanFilter.Control>
+    ) -> KalmanFilter.Estimate {
+        let kalmanFilter = self.kalmanFilter(
+            for: control.context,
+            dimensions: self.dimensions
+        )
+        let estimate = kalmanFilter.update(
+            prediction: prediction,
+            observation: observation,
+            control: control.payload
+        )
+        self.estimate = estimate
+        return estimate
+    }
+    
+    private func kalmanFilter(
+        for context: Context,
+        dimensions: Dimensions
+    ) -> KalmanFilter {
+        if let kalmanFilter = self.kalmanFilters[context] {
+            kalmanFilter.estimate = self.estimate
+            return kalmanFilter
+        } else {
+            let kalmanFilter = self.provider(context, dimensions, self.estimate)
+            assert(kalmanFilter.model.dimensions == dimensions)
+            self.kalmanFilters[context] = kalmanFilter
+            return kalmanFilter
+        }
+    }
+}
