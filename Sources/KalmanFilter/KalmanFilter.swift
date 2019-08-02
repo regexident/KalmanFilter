@@ -43,6 +43,10 @@ public class KalmanFilter: BayesFilter {
     ///   - estimate: The initial process state estimate.
     ///   - model: The process model.
     public init(estimate: Estimate, model: Model) {
+        assert(estimate.state.rows == model.dimensions.state)
+        assert(estimate.covariance.columns == model.dimensions.state)
+        assert(estimate.covariance.rows == model.dimensions.state)
+        
         self.estimate = estimate
         self.model = model
         
