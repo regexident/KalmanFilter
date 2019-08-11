@@ -1,5 +1,7 @@
 import XCTest
 
+import Surge
+
 @testable import KalmanFilter
 
 private func deg2rad(_ degree: Double) -> Double {
@@ -53,9 +55,10 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
                 ]
                 return (qs * qs.transposed()).squared()
         }(),
-            observation: Matrix(
-                diagonal: 2.0,
-                size: dimensions.observation
+            observation: Matrix.diagonal(
+                rows: dimensions.observation,
+                columns: dimensions.observation,
+                repeatedValue: 2.0
             ).squared()
         )
         
@@ -77,7 +80,11 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
     func estimate() -> (state: Vector<Double>, covariance: Matrix<Double>) {
         return (
             state: self.initialState,
-            covariance: Matrix(diagonal: 1.0, size: 4)
+            covariance: Matrix.diagonal(
+                rows: 4,
+                columns: 4,
+                repeatedValue: 1.0
+            )
         )
     }
     
@@ -125,7 +132,7 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
         let similarity = self.filter { i in
             let heading = self.heading
             let velocity = self.velocity
-            return Vector(column: [heading, velocity])
+            return Vector([heading, velocity])
         }
         
         XCTAssertLessThan(similarity, 1.0)
@@ -137,7 +144,7 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
             let cosine = cos(Double(i) * 0.1) * 0.5 + 0.5 // cosine-wave from 0.0..1.0
             let heading = self.heading * sine
             let velocity = self.velocity * cosine
-            return Vector(column: [heading, velocity])
+            return Vector([heading, velocity])
         }
         
         XCTAssertLessThan(similarity, 1.0)

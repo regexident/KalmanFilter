@@ -1,5 +1,7 @@
 import Foundation
 
+import Surge
+
 import BayesFilter
 
 public struct Contextual<Context, Payload> {
@@ -25,7 +27,7 @@ public class ContextSwitchingKalmanFilter<Context: Hashable>: BayesFilter {
         estimate: Estimate,
         provider: @escaping Provider
     ) {
-        assert(estimate.state.rows == dimensions.state)
+        assert(estimate.state.dimensions == dimensions.state)
         assert(estimate.covariance.columns == dimensions.state)
         assert(estimate.covariance.rows == dimensions.state)
         

@@ -1,6 +1,8 @@
 import XCTest
 
-import KalmanFilter
+import Surge
+
+@testable import KalmanFilter
 
 extension XCTestCase {
     internal func makeSignal<S>(
@@ -16,7 +18,7 @@ extension XCTestCase {
         
         for control in controls {
             state = model.apply(state: state, control: control)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: state.rows)
+            let standardNoise: Vector<Double> = Vector(gaussianRandom: state.dimensions)
             let noise: Vector<Double> = covariance * standardNoise
             signal.append(state + noise)
         }
@@ -40,9 +42,9 @@ extension XCTestCase {
             return
         }
         
-        let headerCellsTrueStates = (0..<trueStates[0].rows).map { "True \($0)" }.joined(separator: ",")
-        let headerCellsEstimatedStates = (0..<estimatedStates[0].rows).map { "Estimated \($0)" }.joined(separator: ",")
-        let headerCellsObservations = (0..<observations[0].rows).map { "Observation \($0)" }.joined(separator: ",")
+        let headerCellsTrueStates = (0..<trueStates[0].dimensions).map { "True \($0)" }.joined(separator: ",")
+        let headerCellsEstimatedStates = (0..<estimatedStates[0].dimensions).map { "Estimated \($0)" }.joined(separator: ",")
+        let headerCellsObservations = (0..<observations[0].dimensions).map { "Observation \($0)" }.joined(separator: ",")
         let headerRow = [
             "Time", headerCellsTrueStates, headerCellsEstimatedStates, headerCellsObservations
         ].joined(separator: ",")

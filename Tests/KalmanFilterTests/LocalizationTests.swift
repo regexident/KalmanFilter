@@ -1,5 +1,7 @@
 import XCTest
 
+import Surge
+
 @testable import KalmanFilter
 
 final class LocalizationTests: XCTestCase {
@@ -29,16 +31,21 @@ final class LocalizationTests: XCTestCase {
             let targetPosition: Vector<Double> = [state[0], state[1]]
             let selfPosition: Vector<Double> = [state[2], state[3]]
             let delta = targetPosition - selfPosition
-            let dist = delta.magnitude
+            let dist = delta.magnitude()
             return [dist]
         }
         
         let noiseModel = NoiseModel(
-            process: Matrix(diagonal: 0.0, size: dimensions.state),
+            process: Matrix.diagonal(
+                rows: dimensions.state,
+                columns: dimensions.state,
+                repeatedValue: 0.0
+            ),
             observation: {
-                return Matrix(
-                    diagonal: 0.5,
-                    size: dimensions.observation
+                return Matrix.diagonal(
+                    rows: dimensions.observation,
+                    columns: dimensions.observation,
+                    repeatedValue: 0.5
                 ).squared()
             }()
         )
@@ -63,7 +70,11 @@ final class LocalizationTests: XCTestCase {
         
         let estimate: (state: Vector<Double>, covariance: Matrix<Double>) = (
             state: initialState,
-            covariance: Matrix(diagonal: 1.0, size: model.dimensions.state)
+            covariance: Matrix.diagonal(
+                rows: model.dimensions.state,
+                columns: model.dimensions.state,
+                repeatedValue: 1.0
+            )
         )
         
         let interval = 0.05
@@ -73,7 +84,7 @@ final class LocalizationTests: XCTestCase {
             let r = 7.5
             let x = r * sin(a)
             let y = r * cos(a)
-            return Vector(column: [x, y])
+            return Vector([x, y])
         }
         
         let states = self.makeSignal(

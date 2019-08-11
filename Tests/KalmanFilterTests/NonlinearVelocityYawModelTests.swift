@@ -1,5 +1,7 @@
 import XCTest
 
+import Surge
+
 @testable import KalmanFilter
 
 private func deg2rad(_ degree: Double) -> Double {
@@ -55,10 +57,11 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
                 ]
                 return (qs * qs.transposed()).squared()
             }(),
-            observation: Matrix(
-                diagonal: 2.0,
-                size: dimensions.observation
-                ).squared()
+            observation: Matrix.diagonal(
+                rows: dimensions.observation,
+                columns: dimensions.observation,
+                repeatedValue: 2.0
+            ).squared()
         )
         
         return try! Model(
@@ -80,7 +83,11 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
     func estimate() -> (state: Vector<Double>, covariance: Matrix<Double>) {
         return (
             state: self.initialState,
-            covariance: Matrix(diagonal: 1.0, size: 5)
+            covariance: Matrix.diagonal(
+                rows: 5,
+                columns: 5,
+                repeatedValue: 1.0
+            )
         )
     }
     
@@ -128,7 +135,7 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
         let similarity = self.filter { i in
             let velocity = self.velocity
             let yaw = self.yaw
-            return Vector(column: [velocity, yaw])
+            return Vector([velocity, yaw])
         }
         
         XCTAssertLessThan(similarity, 25.0)
@@ -140,7 +147,7 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
             let cosine = cos(Double(i) * 0.1) * 0.5 + 0.5 // cosine-wave from 0.0..1.0
             let velocity = self.velocity * sine
             let yaw = self.yaw * cosine
-            return Vector(column: [velocity, yaw])
+            return Vector([velocity, yaw])
         }
         
         XCTAssertLessThan(similarity, 5.0)

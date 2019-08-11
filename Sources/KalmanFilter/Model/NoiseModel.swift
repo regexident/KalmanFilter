@@ -1,5 +1,7 @@
 import Foundation
 
+import Surge
+
 public class NoiseModel {
     public enum Error: Swift.Error {
         case process(MatrixError)

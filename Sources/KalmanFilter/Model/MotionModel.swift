@@ -1,5 +1,7 @@
 import Foundation
 
+import Surge
+
 public protocol MotionModel {
     /// Calculate predicted state estimate
     ///
@@ -100,7 +102,7 @@ public class NonlinearMotionModel {
         function: @escaping (Vector<Double>, Vector<Double>) -> Vector<Double>
     ) {
         self.init(dimensions: dimensions, function: function) { state, control in
-            let jacobian = Jacobian(shape: (rows: dimensions.state, columns: dimensions.state))
+            let jacobian = Jacobian(rows: dimensions.state, columns: dimensions.state)
             return jacobian.numeric(state: state) { function($0, control) }
         }
     }
@@ -126,14 +128,14 @@ extension NonlinearMotionModel: MotionModel {
     
     public func validate(for dimensions: Dimensions) throws {
         #if DEBUG
-        let stateBefore: Vector<Double> = .init(rows: dimensions.state)
-        let control: Vector<Double> = .init(rows: dimensions.control)
+        let stateBefore = Vector(dimensions: dimensions.state, repeatedValue: 0.0)
+        let control = Vector(dimensions: dimensions.control, repeatedValue: 0.0)
         
         let stateAfter = self.apply(state: stateBefore, control: control)
         
-        if stateAfter.rows != dimensions.state {
+        if stateAfter.dimensions != dimensions.state {
             throw Error.invalid(
-                message: "Expected output vector of \(dimensions.state) rows, found \(stateAfter.rows)"
+                message: "Expected output vector of \(dimensions.state) dimensions, found \(stateAfter.dimensions)"
             )
         }
         #endif

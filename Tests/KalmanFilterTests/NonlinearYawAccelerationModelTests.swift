@@ -1,5 +1,7 @@
 import XCTest
 
+import Surge
+
 @testable import KalmanFilter
 
 private func deg2rad(_ degree: Double) -> Double {
@@ -57,9 +59,10 @@ final class NonlinearYawAccelerationModelTests: XCTestCase {
                 ]
                 return (qs * qs.transposed()).squared()
             }(),
-            observation: Matrix(
-                diagonal: 2.0,
-                size: dimensions.observation
+            observation: Matrix.diagonal(
+                rows: dimensions.observation,
+                columns: dimensions.observation,
+                repeatedValue: 2.0
             ).squared()
         )
         
@@ -83,7 +86,11 @@ final class NonlinearYawAccelerationModelTests: XCTestCase {
     func estimate() -> (state: Vector<Double>, covariance: Matrix<Double>) {
         return (
             state: self.initialState,
-            covariance: Matrix(diagonal: 1.0, size: 6)
+            covariance: Matrix.diagonal(
+                rows: 6,
+                columns: 6,
+                repeatedValue: 1.0
+            )
         )
     }
     
@@ -96,7 +103,7 @@ final class NonlinearYawAccelerationModelTests: XCTestCase {
         let controls: [Vector<Double>] = (0..<sampleCount).map { i in
             let yaw = self.yaw
             let acceleration = self.acceleration
-            return Vector(column: [yaw, acceleration])
+            return Vector([yaw, acceleration])
         }
         
         let states = self.makeSignal(
@@ -135,7 +142,7 @@ final class NonlinearYawAccelerationModelTests: XCTestCase {
         let similarity = self.filter { i in
             let yaw = self.yaw
             let acceleration = self.acceleration
-            return Vector(column: [yaw, acceleration])
+            return Vector([yaw, acceleration])
         }
         
         XCTAssertLessThan(similarity, 2.0)
@@ -147,7 +154,7 @@ final class NonlinearYawAccelerationModelTests: XCTestCase {
             let cosine = cos(Double(i) * 0.1) * 0.5 + 0.5 // cosine-wave from 0.0..1.0
             let yaw = self.yaw * sine
             let acceleration = self.acceleration * cosine
-            return Vector(column: [yaw, acceleration])
+            return Vector([yaw, acceleration])
         }
         
         XCTAssertLessThan(similarity, 5.0)

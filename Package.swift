@@ -16,7 +16,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/regexident/BayesFilter", .branch("master")),
-        .package(url: "https://github.com/mattt/Surge.git", .upToNextMajor(from: "2.0.0")),
+        .package(url: "https://github.com/regexident/Surge.git", .branch("development")),
+        // .package(url: "https://github.com/mattt/Surge.git", .upToNextMajor(from: "2.0.0")),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.

@@ -43,7 +43,7 @@ public class KalmanFilter: BayesFilter {
     ///   - estimate: The initial process state estimate.
     ///   - model: The process model.
     public init(estimate: Estimate, model: Model) {
-        assert(estimate.state.rows == model.dimensions.state)
+        assert(estimate.state.dimensions == model.dimensions.state)
         assert(estimate.covariance.columns == model.dimensions.state)
         assert(estimate.covariance.rows == model.dimensions.state)
         
@@ -52,7 +52,7 @@ public class KalmanFilter: BayesFilter {
         
         let dimesions = model.dimensions
         
-        self.identity = Matrix(identity: dimesions.state)
+        self.identity = Matrix.identity(size: dimesions.state)
     }
     
     /// Predicts next state using current state and control and calculates probability estimate.

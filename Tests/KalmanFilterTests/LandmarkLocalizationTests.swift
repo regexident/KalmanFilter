@@ -1,5 +1,7 @@
 import XCTest
 
+import Surge
+
 @testable import KalmanFilter
 
 final class LandmarkLocalizationTests: XCTestCase {
@@ -62,9 +64,10 @@ final class LandmarkLocalizationTests: XCTestCase {
                 ]
                 return (qs * qs.transposed()).squared()
             }(),
-            observation: Matrix(
-                diagonal: 0.5, // 2.0,
-                size: self.dimensions.observation
+            observation: Matrix.diagonal(
+                rows: self.dimensions.observation,
+                columns: self.dimensions.observation,
+                repeatedValue: 0.5 // 2.0,
             ).squared()
         )
     }
@@ -101,7 +104,11 @@ final class LandmarkLocalizationTests: XCTestCase {
         
         let estimate: (state: Vector<Double>, covariance: Matrix<Double>) = (
             state: initialState,
-            covariance: Matrix(diagonal: 10.0, size: self.dimensions.state)
+            covariance: Matrix.diagonal(
+                rows: self.dimensions.state,
+                columns: self.dimensions.state,
+                repeatedValue: 10.0
+            )
         )
         
         let landmarks: [Landmark] = [
@@ -169,7 +176,7 @@ final class LandmarkLocalizationTests: XCTestCase {
     
     func testStaticModel() {
         let similarity = self.filter { i in
-            return Vector(column: [0.0, 0.0])
+            return Vector([0.0, 0.0])
         }
         
         XCTAssertLessThan(similarity, 0.5)
@@ -179,7 +186,7 @@ final class LandmarkLocalizationTests: XCTestCase {
         let similarity = self.filter { i in
             let x = self.velocity.x
             let y = self.velocity.y
-            return Vector(column: [x, y])
+            return Vector([x, y])
         }
         
         XCTAssertLessThan(similarity, 0.5)
@@ -191,7 +198,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             let waveY = cos(Double(i) * 0.1)
             let x = self.velocity.x * waveX
             let y = self.velocity.y * waveY
-            return Vector(column: [x, y])
+            return Vector([x, y])
         }
         
         XCTAssertLessThan(similarity, 10.0)

@@ -1,5 +1,7 @@
 import XCTest
 
+import Surge
+
 @testable import KalmanFilter
 
 final class LinearVelocityModelTests: XCTestCase {
@@ -50,9 +52,10 @@ final class LinearVelocityModelTests: XCTestCase {
                 ]
                 return (qs * qs.transposed()).squared()
             }(),
-            observation: Matrix(
-                diagonal: 2.0,
-                size: dimensions.observation
+            observation: Matrix.diagonal(
+                rows: dimensions.observation,
+                columns: dimensions.observation,
+                repeatedValue: 2.0
             ).squared()
         )
 
@@ -74,7 +77,11 @@ final class LinearVelocityModelTests: XCTestCase {
     func estimate() -> (state: Vector<Double>, covariance: Matrix<Double>) {
         return (
             state: self.initialState,
-            covariance: Matrix(diagonal: 1.0, size: 4)
+            covariance: Matrix.diagonal(
+                rows: 4,
+                columns: 4,
+                repeatedValue: 1.0
+            )
         )
     }
     
@@ -121,7 +128,7 @@ final class LinearVelocityModelTests: XCTestCase {
         let similarity = self.filter { i in
             let x = self.velocity.x
             let y = self.velocity.y
-            return Vector(column: [x, y])
+            return Vector([x, y])
         }
         
         XCTAssertLessThan(similarity, 0.5)
@@ -133,7 +140,7 @@ final class LinearVelocityModelTests: XCTestCase {
             let cosine = cos(Double(i) * 0.1) * 0.5 + 0.5 // cosine-wave from 0.0..1.0
             let x = self.velocity.x * sine
             let y = self.velocity.y * cosine
-            return Vector(column: [x, y])
+            return Vector([x, y])
         }
         
         XCTAssertLessThan(similarity, 0.5)

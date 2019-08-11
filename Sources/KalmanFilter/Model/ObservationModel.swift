@@ -1,5 +1,7 @@
 import Foundation
 
+import Surge
+
 public protocol ObservationModel {
     /// Calculate z prediction:
     ///
@@ -49,14 +51,18 @@ extension LinearObservationModel: ObservationModel {
     
     public func validate(for dimensions: Dimensions) throws {
         guard self.state.columns == dimensions.state else {
+            let actual = self.state.columns
+            let expected = dimensions.state
             throw Error.state(.invalidColumnCount(
-                message: "Expected \(dimensions.state) columns in `self.state`, found \(self.state.columns)"
+                message: "Expected \(expected) columns in `self.state`, found \(actual)"
             ))
         }
         
         guard self.state.rows == dimensions.observation else {
+            let actual = self.state.rows
+            let expected = dimensions.observation
             throw Error.state(.invalidRowCount(
-                message: "Expected \(dimensions.observation) columns in `self.state`, found \(self.state.rows)"
+                message: "Expected \(expected) columns in `self.state`, found \(actual)"
             ))
         }
     }
@@ -72,7 +78,7 @@ public class NonlinearObservationModel {
     
     public convenience init(dimensions: Dimensions, function: @escaping (Vector<Double>) -> Vector<Double>) {
         self.init(function: function) { state in
-            let jacobian = Jacobian(shape: (rows: dimensions.observation, columns: dimensions.state))
+            let jacobian = Jacobian(rows: dimensions.observation, columns: dimensions.state)
             return jacobian.numeric(state: state) { function($0) }
         }
     }
@@ -97,13 +103,15 @@ extension NonlinearObservationModel: ObservationModel {
     
     public func validate(for dimensions: Dimensions) throws {
         #if DEBUG
-        let state: Vector<Double> = .init(rows: dimensions.state)
+        let state = Vector(dimensions: dimensions.state, repeatedValue: 0.0)
         
         let observation = self.apply(state: state)
         
-        if observation.rows != dimensions.observation {
+        if observation.dimensions != dimensions.observation {
+            let actual = observation.dimensions
+            let expected = dimensions.observation
             throw Error.invalid(
-                message: "Expected output vector of \(dimensions.observation) rows, found \(observation.rows)"
+                message: "Expected output vector of \(expected) dimensions, found \(actual)"
             )
         }
         #endif
