@@ -86,7 +86,7 @@ final class LandmarkLocalizationTests: XCTestCase {
         let observationModel = self.observationModel(landmark: landmark, dimensions: dimensions)
         let noiseModel = self.noiseModel(dimensions: dimensions)
 
-        return try! Model(
+        return Model(
             dimensions: dimensions,
             motionModel: motionModel,
             observationModel: observationModel,

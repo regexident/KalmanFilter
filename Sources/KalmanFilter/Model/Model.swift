@@ -42,10 +42,12 @@ public class Model {
         motionModel: MotionModel,
         observationModel: ObservationModel,
         noiseModel: NoiseModel
-    ) throws {
-        try motionModel.validate(for: dimensions)
-        try observationModel.validate(for: dimensions)
-        try noiseModel.validate(for: dimensions)
+    ) {
+        #if DEBUG
+        try! motionModel.validate(for: dimensions)
+        try! observationModel.validate(for: dimensions)
+        try! noiseModel.validate(for: dimensions)
+        #endif
         
         self.dimensions = dimensions
         self.motionModel = motionModel

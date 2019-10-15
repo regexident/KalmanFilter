@@ -50,7 +50,7 @@ final class LocalizationTests: XCTestCase {
             }()
         )
         
-        return try! Model(
+        return Model(
             dimensions: dimensions,
             motionModel: motionModel,
             observationModel: observationModel,

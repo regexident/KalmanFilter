@@ -65,7 +65,7 @@ final class LinearAccelerationModelTests: XCTestCase {
             ).squared()
         )
         
-        return try! Model(
+        return Model(
             dimensions: dimensions,
             motionModel: motionModel,
             observationModel: observationModel,
