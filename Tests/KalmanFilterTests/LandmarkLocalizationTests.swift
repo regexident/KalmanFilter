@@ -142,7 +142,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             }
         }
 
-        var kalmanFilter: ContextSwitchingKalmanFilter<Landmark> = .init(
+        var kalmanFilter: ContextualKalmanFilter<Landmark> = .init(
             dimensions: self.dimensions,
             estimate: estimate
         ) { landmark, dimensions, estimate in
