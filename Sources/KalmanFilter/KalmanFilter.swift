@@ -123,16 +123,19 @@ public class KalmanFilter: BayesFilter {
         let zP = model.observationModel.apply(state: x)
         let h = model.observationModel.jacobian(state: x)
         
+        // Calculate transposed H:
         let hT = h.transposed()
         
         // Calculate innovation covariance matrix and its inverse:
         // S(k) = H * P'(k) * Ht + R
         let s = (h * p * hT) + r
         
+        // Calculate inverse of S:
+        // Si = S(k)^(-1)
         let sI = s.inversed()
         
         // Update kalman gain:
-        // K(k) = P'(k) * Ht * S(k)^(-1)
+        // K(k) = P'(k) * Ht * Si
         let k = p * hT * sI
         
         // Calculate innovation:
