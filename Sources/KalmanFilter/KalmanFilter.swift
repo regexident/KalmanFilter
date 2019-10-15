@@ -50,9 +50,9 @@ public class KalmanFilter: BayesFilter {
         self.estimate = estimate
         self.model = model
         
-        let dimesions = model.dimensions
+        let dimensions = model.dimensions
         
-        self.identity = Matrix.identity(size: dimesions.state)
+        self.identity = Matrix.identity(size: dimensions.state)
     }
     
     /// Predicts next state using current state and control and calculates probability estimate.
