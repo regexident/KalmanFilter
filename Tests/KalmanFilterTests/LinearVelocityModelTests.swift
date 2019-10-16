@@ -61,9 +61,9 @@ final class LinearVelocityModelTests: XCTestCase {
 
         return Model(
             dimensions: dimensions,
-            motionModel: motionModel,
-            observationModel: observationModel,
-            noiseModel: noiseModel
+            motion: motionModel,
+            observation: observationModel,
+            noise: noiseModel
         )
     }()
     
@@ -95,14 +95,14 @@ final class LinearVelocityModelTests: XCTestCase {
         let states = self.makeSignal(
             initial: self.initialState,
             controls: controls,
-            model: model.motionModel,
-            processNoise: model.noiseModel.process
+            model: model.motion,
+            processNoise: model.noise.process
         )
         
         let observations: [Vector<Double>] = states.map { state in
-            let observation: Vector<Double> = model.observationModel.apply(state: state)
+            let observation: Vector<Double> = model.observation.apply(state: state)
             let standardNoise: Vector<Double> = Vector(gaussianRandom: model.dimensions.observation)
-            let noise: Vector<Double> = model.noiseModel.observation * standardNoise
+            let noise: Vector<Double> = model.noise.observation * standardNoise
             return observation + noise
         }
         

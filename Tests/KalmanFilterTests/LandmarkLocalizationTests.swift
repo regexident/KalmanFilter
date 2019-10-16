@@ -88,9 +88,9 @@ final class LandmarkLocalizationTests: XCTestCase {
 
         return Model(
             dimensions: dimensions,
-            motionModel: motionModel,
-            observationModel: observationModel,
-            noiseModel: noiseModel
+            motion: motionModel,
+            observation: observationModel,
+            noise: noiseModel
         )
     }
 

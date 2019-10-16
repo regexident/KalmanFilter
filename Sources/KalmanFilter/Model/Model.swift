@@ -11,7 +11,7 @@ public class Model {
     public let dimensions: Dimensions
     
     /// The kalman filters's motion model (used for prediction).
-    public var motionModel: MotionModel {
+    public var motion: MotionModel {
         willSet {
             #if DEBUG
             try! newValue.validate(for: self.dimensions)
@@ -20,7 +20,7 @@ public class Model {
     }
     
     /// The kalman filters's observation model (used for correction).
-    public var observationModel: ObservationModel {
+    public var observation: ObservationModel {
         willSet {
             #if DEBUG
             try! newValue.validate(for: self.dimensions)
@@ -29,7 +29,7 @@ public class Model {
     }
     
     /// The kalman filters's noise model (used for correction).
-    public var noiseModel: NoiseModel {
+    public var noise: NoiseModel {
         willSet {
             #if DEBUG
             try! newValue.validate(for: self.dimensions)
@@ -39,19 +39,19 @@ public class Model {
     
     public init(
         dimensions: Dimensions,
-        motionModel: MotionModel,
-        observationModel: ObservationModel,
-        noiseModel: NoiseModel
+        motion: MotionModel,
+        observation: ObservationModel,
+        noise: NoiseModel
     ) {
         #if DEBUG
-        try! motionModel.validate(for: dimensions)
-        try! observationModel.validate(for: dimensions)
-        try! noiseModel.validate(for: dimensions)
+        try! motion.validate(for: dimensions)
+        try! observation.validate(for: dimensions)
+        try! noise.validate(for: dimensions)
         #endif
         
         self.dimensions = dimensions
-        self.motionModel = motionModel
-        self.observationModel = observationModel
-        self.noiseModel = noiseModel
+        self.motion = motion
+        self.observation = observation
+        self.noise = noise
     }
 }

@@ -76,11 +76,11 @@ public class KalmanFilter: BayesFilter {
         let p = estimate.covariance
         let u = control
         
-        let q = model.noiseModel.process
+        let q = model.noise.process
         
         // Calculate x prediction and A: x'(k), A
-        let xP = model.motionModel.apply(state: x, control: u)
-        let a = model.motionModel.jacobian(state: x, control: u)
+        let xP = model.motion.apply(state: x, control: u)
+        let a = model.motion.jacobian(state: x, control: u)
         
         let aT = a.transposed()
         
@@ -116,12 +116,12 @@ public class KalmanFilter: BayesFilter {
         let p = prediction.covariance
         let z = observation
         
-        let r = model.noiseModel.observation
+        let r = model.noise.observation
         let i = self.identity
         
         // Calculate z prediction and H: z'(k), H
-        let zP = model.observationModel.apply(state: x)
-        let h = model.observationModel.jacobian(state: x)
+        let zP = model.observation.apply(state: x)
+        let h = model.observation.jacobian(state: x)
         
         // Calculate transposed H:
         let hT = h.transposed()
