@@ -1,79 +1,184 @@
 import Foundation
 
 import Surge
-
 import BayesFilter
+import StateSpace
+import StateSpaceModel
 
-public struct Contextual<Context, Payload> {
+public struct Contextual<Context, Value> {
     let context: Context
-    let payload: Payload
+    let value: Value
 }
 
-public class ContextualKalmanFilter<Context: Hashable>: BayesFilter {
-    public typealias Observation = KalmanFilter.Observation
-    public typealias Control = Contextual<Context, KalmanFilter.Control>
-    public typealias Estimate = KalmanFilter.Estimate
-    
-    public typealias Provider = (Context, Dimensions, Estimate) -> KalmanFilter
-    
-    public let dimensions: Dimensions
+import Foundation
+
+import Surge
+import BayesFilter
+import StateSpace
+import StateSpaceModel
+
+// swiftlint:disable all identifier_name
+
+public class ContextualKalmanFilter<Context, MotionModel, ObservationModel>: EstimateReadWritable
+    where Context: Hashable
+{
+    public typealias UpdaterClosure = (Context) -> KalmanUpdater<ObservationModel>
+
     public var estimate: Estimate
-    private var provider: Provider
-    
-    private var kalmanFilters: [Context: KalmanFilter] = [:]
-    
+
+    public var predictor: KalmanPredictor<MotionModel>
+    public var updaters: [Context: KalmanUpdater<ObservationModel>] = [:]
+    public var closure: UpdaterClosure
+
+    /// Creates a Kalman Filter with a given initial process state `estimate`.
+    ///
+    /// Unless a more appropriate initial `estimate` is available
+    /// the following default provides reasonably good results:
+    ///
+    /// ```
+    /// let state: Vector<Double> = .zero
+    /// let covariance: Matrix<Double> = .init(
+    ///     diagonal: <#variance#>,
+    ///     size: <#state dimensions#>
+    /// )
+    /// let estimate = (state: state, covariance: covariance)
+    /// let kalmanFilter = ContextualKalmanFilter(
+    ///     estimate: estimate,
+    ///     model: <#model#>
+    /// )
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - estimate: The initial process state estimate.
+    ///   - predictor: The kalman filter's internal predictor.
+    ///   - updater: The kalman filter's internal updater.
     public init(
-        dimensions: Dimensions,
         estimate: Estimate,
-        provider: @escaping Provider
+        predictor: KalmanPredictor<MotionModel>,
+        closure: @escaping UpdaterClosure
     ) {
-        assert(estimate.state.dimensions == dimensions.state)
-        assert(estimate.covariance.columns == dimensions.state)
-        assert(estimate.covariance.rows == dimensions.state)
-        
-        self.dimensions = dimensions
         self.estimate = estimate
-        self.provider = provider
+        self.predictor = predictor
+        self.updaters = [:]
+        self.closure = closure
     }
-    
-    public func predict(
-        control: Control
-    ) -> Estimate {
-        let kalmanFilter = self.kalmanFilter(
-            for: control.context,
-            dimensions: self.dimensions
-        )
-        return kalmanFilter.predict(control: control.payload)
-    }
-    
-    public func update(
-        prediction: Estimate,
-        observation: Observation,
-        control: Control
-    ) -> Estimate {
-        let kalmanFilter = self.kalmanFilter(
-            for: control.context,
-            dimensions: self.dimensions
-        )
-        let estimate = kalmanFilter.update(
-            prediction: prediction,
-            observation: observation,
-            control: control.payload
-        )
-        self.estimate = estimate
-        return estimate
-    }
-    
-    private func kalmanFilter(
+
+    private func withUpdater<T>(
         for context: Context,
-        dimensions: Dimensions
-    ) -> KalmanFilter {
-        let kalmanFilter = self.kalmanFilters[context] ?? self.provider(context, dimensions, self.estimate)
-        assert(kalmanFilter.model.dimensions == dimensions)
+        _ closure: (KalmanUpdater<ObservationModel>) -> T
+    ) -> T {
+        let updater = self.updaters[context] ?? self.closure(context)
+        let result = closure(updater)
+        self.updaters[context] = updater
+        return result
+    }
+}
 
-        kalmanFilter.estimate = self.estimate
+extension ContextualKalmanFilter: DimensionsValidatable {
+    public func validate(for dimensions: DimensionsProtocol) throws {
+        try self.predictor.validate(for: dimensions)
+        for updater in self.updaters.values {
+            try updater.validate(for: dimensions)
+        }
+    }
+}
 
-        self.kalmanFilters[context] = kalmanFilter
-        return kalmanFilter
+extension ContextualKalmanFilter: Statable {
+    public typealias State = Vector<Double>
+}
+
+extension ContextualKalmanFilter: Controllable {
+    public typealias Control = Vector<Double>
+}
+
+extension ContextualKalmanFilter: Observable {
+    public typealias Observation = Contextual<Context, Vector<Double>>
+}
+
+extension ContextualKalmanFilter: Estimatable {
+    public typealias Estimate = (
+        /// State vector (aka `x` in the literature)
+        state: Vector<Double>,
+        /// Estimate covariance matrix (aka `P`, or sometimes `Σ` in the literature)
+        covariance: Matrix<Double>
+    )
+}
+
+extension ContextualKalmanFilter: BayesPredictor
+    where MotionModel: KalmanMotionModel
+{
+    public func predicted(
+        estimate: Estimate
+    ) -> Estimate {
+        return self.predictor.predicted(
+            estimate: estimate
+        )
+    }
+}
+
+extension ContextualKalmanFilter: ControllableBayesPredictor
+    where MotionModel: ControllableKalmanMotionModel
+{
+    public func predicted(
+        estimate: Estimate,
+        control: Control
+    ) -> Estimate {
+        return self.predictor.predicted(
+            estimate: estimate,
+            control: control
+        )
+    }
+}
+
+extension ContextualKalmanFilter: BayesUpdater
+    where ObservationModel: KalmanObservationModel
+{
+    public func updated(
+        prediction: Estimate,
+        observation: Observation
+    ) -> Estimate {
+        return self.withUpdater(for: observation.context) { updater in
+            let estimate = updater.updated(
+                prediction: prediction,
+                observation: observation.value
+            )
+            return estimate
+        }
+    }
+}
+
+extension ContextualKalmanFilter: BayesFilter
+    where MotionModel: KalmanMotionModel, ObservationModel: KalmanObservationModel
+{
+    public func filtered(
+        estimate: Estimate,
+        observation: Observation
+    ) -> Estimate {
+        let prediction = self.predicted(
+            estimate: estimate
+        )
+        return self.updated(
+            prediction: prediction,
+            observation: observation
+        )
+    }
+}
+
+extension ContextualKalmanFilter: ControllableBayesFilter
+    where MotionModel: ControllableKalmanMotionModel, ObservationModel: KalmanObservationModel
+{
+    public func filtered(
+        estimate: Estimate,
+        control: Control,
+        observation: Observation
+    ) -> Estimate {
+        let prediction = self.predicted(
+            estimate: estimate,
+            control: control
+        )
+        return self.updated(
+            prediction: prediction,
+            observation: observation
+        )
     }
 }

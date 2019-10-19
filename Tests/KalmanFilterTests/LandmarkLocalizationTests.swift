@@ -1,10 +1,14 @@
 import XCTest
 
 import Surge
+import StateSpaceModel
 
 @testable import KalmanFilter
 
 final class LandmarkLocalizationTests: XCTestCase {
+    typealias MotionModel = ControllableLinearMotionModel<LinearMotionModel>
+    typealias ObservationModel = NonlinearObservationModel
+
     struct Landmark: Hashable {
         let location: Vector<Double>
         let identifier: UUID
@@ -13,86 +17,66 @@ final class LandmarkLocalizationTests: XCTestCase {
             self.location = location
             self.identifier = identifier
         }
-        
+
         static func == (lhs: Landmark, rhs: Landmark) -> Bool {
             return lhs.identifier == rhs.identifier
         }
-        
+
         func hash(into hasher: inout Hasher) {
             self.identifier.hash(into: &hasher)
         }
     }
-    
+
     let time: Double = 1.0 // time delta in seconds
-    
     let velocity: (x: Double, y: Double) = (x: 0.125, y: 0.125) // in meters per second
-    
-    let dimensions = Dimensions(
+
+    let dimensions: Dimensions = .init(
         state: 4, // [position x, position y, velocity x, velocity y]
         control: 2, // [velocity x, velocity y]
         observation: 1 // [distance to landmark]
     )
-    
-    func motionModel(dimensions: Dimensions) -> MotionModel {
-        let t = self.time
-        return LinearMotionModel(
-            state: [
-                [1.0, 0.0, t, 0.0],
-                [0.0, 1.0, 0.0, t],
-                [0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0],
-            ],
-            control: [
-                [0.0, 0.0],
-                [0.0, 0.0],
-                [t, 0.0],
-                [0.0, t],
-            ]
-        )
-    }
-    
-    func noiseModel(dimensions: Dimensions) -> NoiseModel {
-        return NoiseModel(
-            process: {
-                let t = self.time
-                let accel = 0.25 // max expected acceleration in m/sec^2
-                let qs: Matrix = [
-                    [accel * 0.5 * t * t], // translation in m (double-integrated acceleration)
-                    [accel * 0.5 * t * t], // translation in m (double-integrated acceleration)
-                    [accel * t], // velocity in m/s (integrated acceleration)
-                    [accel * t], // velocity in m/s (integrated acceleration)
-                ]
-                return (qs * qs.transposed()).squared()
-            }(),
-            observation: Matrix.diagonal(
-                rows: self.dimensions.observation,
-                columns: self.dimensions.observation,
-                repeatedValue: 0.5 // 2.0,
-            ).squared()
-        )
-    }
-    
-    func observationModel(landmark: Landmark, dimensions: Dimensions) -> ObservationModel {
-        NonlinearObservationModel(dimensions: dimensions) { state in
+
+    lazy var motionModel: MotionModel = .init(
+        state: [
+            [1.0, 0.0, self.time, 0.0],
+            [0.0, 1.0, 0.0, self.time],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+        ],
+        control: [
+            [0.0, 0.0],
+            [0.0, 0.0],
+            [self.time, 0.0],
+            [0.0, self.time],
+        ]
+    )
+
+    func observationModel(landmark: Landmark) -> ObservationModel {
+        return .init(dimensions: self.dimensions) { state in
             let targetPosition: Vector<Double> = [state[0], state[1]]
             let landmarkPosition: Vector<Double> = landmark.location
             let dist = targetPosition.distance(to: landmarkPosition)
             return [dist]
         }
     }
-    
-    func model(landmark: Landmark, dimensions: Dimensions) -> Model {
-        let motionModel = self.motionModel(dimensions: dimensions)
-        let observationModel = self.observationModel(landmark: landmark, dimensions: dimensions)
-        let noiseModel = self.noiseModel(dimensions: dimensions)
 
-        return Model(
-            dimensions: dimensions,
-            motion: motionModel,
-            observation: observationModel,
-            noise: noiseModel
-        )
-    }
+    lazy var processNoise: Matrix<Double> = {
+        let t = self.time
+        let accel = 0.25 // max expected acceleration in m/sec^2
+        let qs: Matrix<Double> = [
+            [accel * 0.5 * t * t], // translation in m (double-integrated acceleration)
+            [accel * 0.5 * t * t], // translation in m (double-integrated acceleration)
+            [accel * t], // velocity in m/s (integrated acceleration)
+            [accel * t], // velocity in m/s (integrated acceleration)
+        ]
+        return (qs * qs.transposed()).squared()
+    }()
+
+    lazy var observationNoise: Matrix<Double> = .diagonal(
+        rows: self.dimensions.observation,
+        columns: self.dimensions.observation,
+        repeatedValue: 0.5
+    )
 
     func filter(control: (Int) -> Vector<Double>) -> Double {
         let initialState: Vector<Double> = [
@@ -101,7 +85,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             0.0, // target velocity x
             0.0, // target velocity y
         ]
-        
+
         let estimate: (state: Vector<Double>, covariance: Matrix<Double>) = (
             state: initialState,
             covariance: Matrix.diagonal(
@@ -110,7 +94,7 @@ final class LandmarkLocalizationTests: XCTestCase {
                 repeatedValue: 10.0
             )
         )
-        
+
         let landmarks: [Landmark] = [
             Landmark(location: [-10.0, -10.0]),
             Landmark(location: [-10.0, 10.0]),
@@ -120,47 +104,49 @@ final class LandmarkLocalizationTests: XCTestCase {
 
         let sampleCount = 500
         let controls: [Vector<Double>] = (0..<sampleCount).map(control)
-        
-        let motionModel = self.motionModel(dimensions: self.dimensions)
-        let noiseModel = self.noiseModel(dimensions: self.dimensions)
 
         let states = self.makeSignal(
             initial: initialState,
             controls: controls,
             model: motionModel,
-            processNoise: noiseModel.process
+            processNoise: self.processNoise
         )
 
         let observations: [[Vector<Double>]] = states.map { state in
             landmarks.map { landmark in
-                let observationModel = self.observationModel(landmark: landmark, dimensions: self.dimensions)
+                let observationModel = self.observationModel(landmark: landmark)
                 let observation: Vector<Double> = observationModel.apply(state: state)
                 let standardNoise: Vector<Double> = Vector(gaussianRandom: self.dimensions.observation)
-                let noise: Vector<Double> = noiseModel.observation * standardNoise
+                let noise: Vector<Double> = self.observationNoise * standardNoise
                 let noisyObservation = observation + noise
                 return noisyObservation
             }
         }
 
-        var kalmanFilter: ContextualKalmanFilter<Landmark> = .init(
-            dimensions: self.dimensions,
-            estimate: estimate
-        ) { landmark, dimensions, estimate in
-            let model = self.model(landmark: landmark, dimensions: dimensions)
-            return KalmanFilter(estimate: estimate, model: model)
+        var kalmanFilter: ContextualKalmanFilter<Landmark, MotionModel, ObservationModel> = .init(
+            estimate: estimate,
+            predictor: KalmanPredictor(
+                motionModel: self.motionModel,
+                processNoise: self.processNoise
+            )
+        ) { landmark in
+            return KalmanUpdater(
+                observationModel: self.observationModel(landmark: landmark),
+                observationNoise: self.observationNoise
+            )
         }
-        
+
         let filteredStates: [Vector<Double>] = Swift.zip(controls, observations).map { argument in
             let (control, observations) = argument
             for (landmark, observation) in Swift.zip(landmarks, observations) {
                 let _ = kalmanFilter.filter(
-                    observation: observation,
-                    control: Contextual(context: landmark, payload: control)
+                    control: control,
+                    observation: Contextual(context: landmark, value: observation)
                 )
             }
             return kalmanFilter.estimate.state
         }
-        
+
 //        self.printSheetAndFail(
 //            trueStates: states,
 //            estimatedStates: filteredStates,
@@ -173,25 +159,25 @@ final class LandmarkLocalizationTests: XCTestCase {
 
         return similarity
     }
-    
+
     func testStaticModel() {
         let similarity = self.filter { i in
             return Vector([0.0, 0.0])
         }
-        
+
         XCTAssertLessThan(similarity, 0.5)
     }
-    
+
     func testConstantModel() {
         let similarity = self.filter { i in
             let x = self.velocity.x
             let y = self.velocity.y
             return Vector([x, y])
         }
-        
+
         XCTAssertLessThan(similarity, 0.5)
     }
-    
+
     func testVariableModel() {
         let similarity = self.filter { i in
             let waveX = sin(Double(i) * 0.1)
@@ -200,7 +186,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             let y = self.velocity.y * waveY
             return Vector([x, y])
         }
-        
+
         XCTAssertLessThan(similarity, 10.0)
     }
 

@@ -1,17 +1,22 @@
 import XCTest
 
 import Surge
+import StateSpace
+import StateSpaceModel
 
 @testable import KalmanFilter
 
 extension XCTestCase {
-    internal func makeSignal<S>(
+    internal func makeSignal<Controls, MotionModel>(
         initial initialState: Vector<Double>,
-        controls: S,
+        controls: Controls,
         model: MotionModel,
         processNoise covariance: Matrix<Double>
     ) -> [Vector<Double>]
-        where S: Sequence, S.Element == Vector<Double>
+        where Controls: Sequence, Controls.Element == Vector<Double>,
+              MotionModel: Statable & ControllableMotionModelProtocol,
+              MotionModel.State == Vector<Double>,
+              MotionModel.Control == Vector<Double>
     {
         var signal: [Vector<Double>] = [initialState]
         var state = initialState
@@ -27,6 +32,32 @@ extension XCTestCase {
             signal.removeLast()
         }
         
+        return signal
+    }
+
+    internal func makeSignal<MotionModel>(
+        initial initialState: Vector<Double>,
+        count: Int,
+        model: MotionModel,
+        processNoise covariance: Matrix<Double>
+    ) -> [Vector<Double>]
+        where MotionModel: Statable & UncontrollableMotionModelProtocol,
+              MotionModel.State == Vector<Double>
+    {
+        var signal: [MotionModel.State] = [initialState]
+        var state = initialState
+
+        for _ in 0..<count {
+            state = model.apply(state: state)
+            let standardNoise: Vector<Double> = Vector(gaussianRandom: state.dimensions)
+            let noise: Vector<Double> = covariance * standardNoise
+            signal.append(state + noise)
+        }
+
+        if signal.count > 1 {
+            signal.removeLast()
+        }
+
         return signal
     }
     

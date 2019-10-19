@@ -1,6 +1,7 @@
 import Foundation
 
 import Surge
+import StateSpaceModel
 
 public class NoiseModel {
     public enum Error: Swift.Error {
@@ -30,30 +31,28 @@ public class NoiseModel {
         self.process = process
         self.observation = observation
     }
-    
-    /// Validate the model for a given dimensional environment
-    ///
-    /// - Parameters:
-    ///   - dimensions: the environment's dimensions
-    public func validate(for dimensions: Dimensions) throws {
+}
+
+extension NoiseModel: DimensionsValidatable {
+    public func validate(for dimensions: DimensionsProtocol) throws {
         guard self.process.columns == dimensions.state else {
             throw Error.process(.invalidColumnCount(
                 message: "Expected \(dimensions.state) columns in `self.process`, found \(self.process.columns)"
             ))
         }
-        
+
         guard self.process.rows == dimensions.state else {
             throw Error.process(.invalidRowCount(
                 message: "Expected \(dimensions.state) columns in `self.process`, found \(self.process.rows)"
             ))
         }
-        
+
         guard self.observation.columns == dimensions.observation else {
             throw Error.observation(.invalidColumnCount(
                 message: "Expected \(dimensions.observation) columns in `self.observation`, found \(self.observation.columns)"
             ))
         }
-        
+
         guard self.observation.rows == dimensions.observation else {
             throw Error.observation(.invalidRowCount(
                 message: "Expected \(dimensions.observation) columns in `self.observation`, found \(self.observation.rows)"

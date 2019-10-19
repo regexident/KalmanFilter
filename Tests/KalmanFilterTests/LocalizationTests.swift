@@ -1,66 +1,56 @@
 import XCTest
 
 import Surge
+import StateSpaceModel
 
 @testable import KalmanFilter
 
 final class LocalizationTests: XCTestCase {
-    let model: Model = {
-        let dimensions = Dimensions(
-            state: 4, // [target position x, target position y, self position x, self position y]
-            control: 2, // [self position x, self position y]
-            observation: 1 // [distance]
-        )
-        
-        let motionModel = LinearMotionModel(
-            state: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0],
-            ],
-            control: [
-                [0.0, 0.0],
-                [0.0, 0.0],
-                [1.0, 0.0],
-                [0.0, 1.0],
-            ]
-        )
-        
-        let observationModel = NonlinearObservationModel(dimensions: dimensions) { state in
-            let targetPosition: Vector<Double> = [state[0], state[1]]
-            let selfPosition: Vector<Double> = [state[2], state[3]]
-            let delta = targetPosition - selfPosition
-            let dist = delta.magnitude()
-            return [dist]
-        }
-        
-        let noiseModel = NoiseModel(
-            process: Matrix.diagonal(
-                rows: dimensions.state,
-                columns: dimensions.state,
-                repeatedValue: 0.0
-            ),
-            observation: {
-                return Matrix.diagonal(
-                    rows: dimensions.observation,
-                    columns: dimensions.observation,
-                    repeatedValue: 0.5
-                ).squared()
-            }()
-        )
-        
-        return Model(
-            dimensions: dimensions,
-            motion: motionModel,
-            observation: observationModel,
-            noise: noiseModel
-        )
-    }()
-    
+    typealias MotionModel = ControllableLinearMotionModel<LinearMotionModel>
+    typealias ObservationModel = NonlinearObservationModel
+
+    let dimensions: Dimensions = Dimensions(
+        state: 4, // [target position x, target position y, self position x, self position y]
+        control: 2, // [self position x, self position y]
+        observation: 1 // [distance]
+    )
+
+    lazy var motionModel: MotionModel = .init(
+        state: [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+        ],
+        control: [
+            [0.0, 0.0],
+            [0.0, 0.0],
+            [1.0, 0.0],
+            [0.0, 1.0],
+        ]
+    )
+
+    lazy var observationModel: ObservationModel = .init(dimensions: self.dimensions) { state in
+        let targetPosition: Vector<Double> = [state[0], state[1]]
+        let selfPosition: Vector<Double> = [state[2], state[3]]
+        let delta = targetPosition - selfPosition
+        let dist = delta.magnitude()
+        return [dist]
+    }
+
+    lazy var processNoise: Matrix<Double> = .diagonal(
+        rows: self.dimensions.state,
+        columns: self.dimensions.state,
+        repeatedValue: 0.0
+    )
+
+    lazy var observationNoise: Matrix<Double> = .diagonal(
+        rows: self.dimensions.observation,
+        columns: self.dimensions.observation,
+        repeatedValue: 0.5
+    )
+
     func testModel() {
-        let model = self.model
-        
         let initialState: Vector<Double> = [
             5.0, // target position x
             10.0, // target position y
@@ -71,8 +61,8 @@ final class LocalizationTests: XCTestCase {
         let estimate: (state: Vector<Double>, covariance: Matrix<Double>) = (
             state: initialState,
             covariance: Matrix.diagonal(
-                rows: model.dimensions.state,
-                columns: model.dimensions.state,
+                rows: self.dimensions.state,
+                columns: self.dimensions.state,
                 repeatedValue: 1.0
             )
         )
@@ -90,22 +80,32 @@ final class LocalizationTests: XCTestCase {
         let states = self.makeSignal(
             initial: estimate.state,
             controls: controls,
-            model: model.motion,
-            processNoise: model.noise.process
+            model: self.motionModel,
+            processNoise: self.processNoise
         )
         
         let observations: [Vector<Double>] = states.map { state in
-            let observation: Vector<Double> = model.observation.apply(state: state)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: model.dimensions.observation)
-            let noise: Vector<Double> = model.noise.observation * standardNoise
+            let observation: Vector<Double> = self.observationModel.apply(state: state)
+            let standardNoise: Vector<Double> = Vector(gaussianRandom: self.dimensions.observation)
+            let noise: Vector<Double> = self.observationNoise * standardNoise
             return observation + noise
         }
-        
-        var kalmanFilter = KalmanFilter(estimate: estimate, model: model)
+
+        var kalmanFilter = KalmanFilter(
+            estimate: estimate,
+            predictor: KalmanPredictor(
+                motionModel: self.motionModel,
+                processNoise: self.processNoise
+            ),
+            updater: KalmanUpdater(
+                observationModel: self.observationModel,
+                observationNoise: self.observationNoise
+            )
+        )
 
         let filteredStates: [Vector<Double>] = Swift.zip(controls, observations).map { argument in
             let (control, observation) = argument
-            return kalmanFilter.filter(observation: observation, control: control).state
+            return kalmanFilter.filter(control: control, observation: observation).state
         }
         
 //        self.printSheetAndFail(

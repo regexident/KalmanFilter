@@ -2,25 +2,17 @@ import Foundation
 
 import Surge
 import BayesFilter
+import StateSpace
+import StateSpaceModel
 
 // swiftlint:disable all identifier_name
 
-public class KalmanFilter: BayesFilter {
-    public typealias Observation = Vector<Double>
-    public typealias Control = Vector<Double>
-    public typealias Estimate = (
-        /// State vector (aka `x` in the literature)
-        state: Vector<Double>,
-        /// Estimate covariance matrix (aka `P`, or sometimes `Σ` in the literature)
-        covariance: Matrix<Double>
-    )
-    
+public class KalmanFilter<MotionModel, ObservationModel>: EstimateReadWritable {
     public var estimate: Estimate
-    
-    public var model: Model
-    
-    private let identity: Matrix<Double>
-    
+
+    public var predictor: KalmanPredictor<MotionModel>
+    public var updater: KalmanUpdater<ObservationModel>
+
     /// Creates a Kalman Filter with a given initial process state `estimate`.
     ///
     /// Unless a more appropriate initial `estimate` is available
@@ -41,121 +33,119 @@ public class KalmanFilter: BayesFilter {
     ///
     /// - Parameters:
     ///   - estimate: The initial process state estimate.
-    ///   - model: The process model.
-    public init(estimate: Estimate, model: Model) {
-        assert(estimate.state.dimensions == model.dimensions.state)
-        assert(estimate.covariance.columns == model.dimensions.state)
-        assert(estimate.covariance.rows == model.dimensions.state)
-        
+    ///   - predictor: The kalman filter's internal predictor.
+    ///   - updater: The kalman filter's internal updater.
+    public init(
+        estimate: Estimate,
+        predictor: KalmanPredictor<MotionModel>,
+        updater: KalmanUpdater<ObservationModel>
+    ) {
         self.estimate = estimate
-        self.model = model
-        
-        let dimensions = model.dimensions
-        
-        self.identity = Matrix.identity(size: dimensions.state)
+        self.predictor = predictor
+        self.updater = updater
     }
-    
-    /// Predicts next state using current state and control and calculates probability estimate.
-    ///
-    /// Implements the following literature formulas:
-    ///
-    /// ```
-    /// x'(k) = A * x(k-1) + B * u(k).
-    /// P'(k) = A * P(k-1) * At + Q
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - control: The control used for prediction step.
-    public func predict(
-        control: Control
-    ) -> Estimate {
-        let estimate = self.estimate
-        let model = self.model
-        
-        let x = estimate.state
-        let p = estimate.covariance
-        let u = control
-        
-        let q = model.noise.process
-        
-        // Calculate x prediction and A: x'(k), A
-        let xP = model.motion.apply(state: x, control: u)
-        let a = model.motion.jacobian(state: x, control: u)
-        
-        let aT = a.transposed()
-        
-        // Calculate predicted probability estimate:
-        // P'(k) = A * P(k-1) * At + Q
-        let pP = (a * p * aT) + q
-        
-        return Estimate(state: xP, covariance: pP)
+}
+
+extension KalmanFilter: DimensionsValidatable {
+    public func validate(for dimensions: DimensionsProtocol) throws {
+        try self.predictor.validate(for: dimensions)
+        try self.updater.validate(for: dimensions)
     }
-    
-    /// Corrects the state error covariance based on innovation vector and Kalman update.
-    ///
-    /// Implements the following literature formulas:
-    ///
-    /// ```
-    /// P'(k) = A * P(k-1) * At + Q
-    /// K(k) = P'(k) * Ht * (H * P'(k) * Ht + R)^(-1)
-    /// x(k) = x'(k) + K(k) * (z(k) - H * x'(k))
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - prediction: The prediction used for prediction step.
-    ///   - observation: The observation used for prediction step.
-    ///   - control: The control used for prediction step.
-    public func update(
-        prediction: Estimate,
-        observation: Observation,
-        control: Control
-    ) -> Estimate {
-        let model = self.model
-        
-        let x = prediction.state
-        let p = prediction.covariance
-        let z = observation
-        
-        let r = model.noise.observation
-        let i = self.identity
-        
-        // Calculate z prediction and H: z'(k), H
-        let zP = model.observation.apply(state: x)
-        let h = model.observation.jacobian(state: x)
-        
-        // Calculate transposed H:
-        let hT = h.transposed()
-        
-        // Calculate innovation covariance matrix and its inverse:
-        // S(k) = H * P'(k) * Ht + R
-        let s = (h * p * hT) + r
-        
-        // Calculate inverse of S:
-        // Si = S(k)^(-1)
-        let sI = s.inversed()
-        
-        // Update kalman gain:
-        // K(k) = P'(k) * Ht * Si
-        let k = p * hT * sI
-        
-        // Calculate innovation:
-        // y(k) = z(k) - z'(k)
-        let y = z - zP
-        
-        // Correct state using Kalman gain:
-        // x(k) = x'(k) + K(k) * y(k)
-        let state = x + (k * y)
-        
-        // P(k) = (I - K(k) * H) * P'(k)
-        let covariance = (i - (k * h)) * p
-        
-        let estimate = Estimate(
-            state: state,
-            covariance: covariance
+}
+
+extension KalmanFilter: BayesPredictor
+    where MotionModel: KalmanMotionModel
+{
+    public func predicted(estimate: Estimate) -> Estimate {
+        return self.predictor.predicted(
+            estimate: estimate
         )
-        
-        self.estimate = estimate
-        
+    }
+}
+
+extension KalmanFilter: Statable {
+    public typealias State = Vector<Double>
+}
+
+extension KalmanFilter: Controllable {
+    public typealias Control = Vector<Double>
+}
+
+extension KalmanFilter: Observable {
+    public typealias Observation = Vector<Double>
+}
+
+extension KalmanFilter: Estimatable {
+    public typealias Estimate = (
+        /// State vector (aka `x` in the literature)
+        state: Vector<Double>,
+        /// Estimate covariance matrix (aka `P`, or sometimes `Σ` in the literature)
+        covariance: Matrix<Double>
+    )
+}
+
+//extension KalmanFilter: ControllableBayesPredictor
+//    where MotionModel: ControllableKalmanMotionModel
+//{
+//    public func predicted(
+//        estimate: Estimate,
+//        control: Control
+//    ) -> Estimate {
+//        return self.predictor.predicted(
+//            estimate: estimate,
+//            control: control
+//        )
+//    }
+//}
+//
+//extension KalmanFilter: BayesUpdater
+//    where ObservationModel: KalmanObservationModel
+//{
+//    public func updated(
+//        prediction: Estimate,
+//        observation: Observation
+//    ) -> Estimate {
+//        return self.updater.updated(
+//            prediction: prediction,
+//            observation: observation
+//        )
+//    }
+//}
+
+extension KalmanFilter: BayesFilter
+    where MotionModel: KalmanMotionModel, ObservationModel: KalmanObservationModel
+{
+    public func filtered(
+        estimate: Estimate,
+        observation: Observation
+    ) -> Estimate {
+        let prediction = self.predictor.predicted(
+            estimate: estimate
+        )
+        let estimate = self.updater.updated(
+            prediction: prediction,
+            observation: observation
+        )
+        return estimate
+    }
+}
+
+extension KalmanFilter: ControllableBayesFilter
+    where MotionModel: ControllableKalmanMotionModel, ObservationModel: KalmanObservationModel
+{
+    public func filtered(
+        estimate: Estimate,
+        control: Control,
+        observation: Observation
+    ) -> Estimate {
+        let prediction = self.predictor.predicted(
+            estimate: estimate,
+            control: control
+        )
+        let estimate = self.updater.updated(
+            prediction: prediction,
+            observation: observation
+        )
         return estimate
     }
 }
