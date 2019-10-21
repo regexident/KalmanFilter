@@ -53,16 +53,6 @@ extension KalmanFilter: DimensionsValidatable {
     }
 }
 
-extension KalmanFilter: BayesPredictor
-    where MotionModel: KalmanMotionModel
-{
-    public func predicted(estimate: Estimate) -> Estimate {
-        return self.predictor.predicted(
-            estimate: estimate
-        )
-    }
-}
-
 extension KalmanFilter: Statable {
     public typealias State = Vector<Double>
 }
@@ -84,33 +74,43 @@ extension KalmanFilter: Estimatable {
     )
 }
 
-//extension KalmanFilter: ControllableBayesPredictor
-//    where MotionModel: ControllableKalmanMotionModel
-//{
-//    public func predicted(
-//        estimate: Estimate,
-//        control: Control
-//    ) -> Estimate {
-//        return self.predictor.predicted(
-//            estimate: estimate,
-//            control: control
-//        )
-//    }
-//}
-//
-//extension KalmanFilter: BayesUpdater
-//    where ObservationModel: KalmanObservationModel
-//{
-//    public func updated(
-//        prediction: Estimate,
-//        observation: Observation
-//    ) -> Estimate {
-//        return self.updater.updated(
-//            prediction: prediction,
-//            observation: observation
-//        )
-//    }
-//}
+extension KalmanFilter: BayesPredictor
+    where MotionModel: KalmanMotionModel
+{
+    public func predicted(estimate: Estimate) -> Estimate {
+        return self.predictor.predicted(
+            estimate: estimate
+        )
+    }
+}
+
+extension KalmanFilter: ControllableBayesPredictor
+    where MotionModel: ControllableKalmanMotionModel
+{
+    public func predicted(
+        estimate: Estimate,
+        control: Control
+    ) -> Estimate {
+        return self.predictor.predicted(
+            estimate: estimate,
+            control: control
+        )
+    }
+}
+
+extension KalmanFilter: BayesUpdater
+    where ObservationModel: KalmanObservationModel
+{
+    public func updated(
+        prediction: Estimate,
+        observation: Observation
+    ) -> Estimate {
+        return self.updater.updated(
+            prediction: prediction,
+            observation: observation
+        )
+    }
+}
 
 extension KalmanFilter: BayesFilter
     where MotionModel: KalmanMotionModel, ObservationModel: KalmanObservationModel
