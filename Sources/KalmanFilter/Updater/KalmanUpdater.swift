@@ -45,65 +45,6 @@ public class KalmanUpdater<ObservationModel> {
 
         return identity
     }
-
-    /// Corrects the state error covariance based on innovation vector and Kalman update.
-    ///
-    /// Implements the following literature formulas:
-    ///
-    /// ```
-    /// P'(k) = A * P(k-1) * At + Q
-    /// K(k) = P'(k) * Ht * (H * P'(k) * Ht + R)^(-1)
-    /// x(k) = x'(k) + K(k) * (z(k) - H * x'(k))
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - prediction: The prediction used for prediction step.
-    ///   - observation: The observation used for prediction step.
-    ///   - control: The control used for prediction step.
-    private func updated(
-        prediction: Estimate,
-        observation: Vector<Double>,
-        applyModel: (Vector<Double>) -> (Vector<Double>, Matrix<Double>)
-    ) -> KalmanEstimate {
-        let x = prediction.state
-        let p = prediction.covariance
-
-        let z = observation
-
-        let r = self.observationNoise
-        let i = self.identity(size: x.dimensions)
-
-        // Calculate z prediction and H: z'(k), H
-        let (zP, h) = applyModel(x)
-
-        // Calculate transposed H:
-        let hT = h.transposed()
-
-        // Calculate innovation covariance matrix and its inverse:
-        // S(k) = H * P'(k) * Ht + R
-        let s = (h * p * hT) + r
-
-        // Calculate inverse of S:
-        // Si = S(k)^(-1)
-        let sI = s.inversed()
-
-        // Update kalman gain:
-        // K(k) = P'(k) * Ht * Si
-        let k = p * hT * sI
-
-        // Calculate innovation:
-        // y(k) = z(k) - z'(k)
-        let y = z - zP
-
-        // Correct state using Kalman gain:
-        // x(k) = x'(k) + K(k) * y(k)
-        let xP = x + (k * y)
-
-        // P(k) = (I - K(k) * H) * P'(k)
-        let pP = (i - (k * h)) * p
-
-        return KalmanEstimate(state: xP, covariance: pP)
-    }
 }
 
 extension KalmanUpdater: DimensionsValidatable {
@@ -141,15 +82,63 @@ extension KalmanUpdater: Estimatable {
 extension KalmanUpdater: BayesUpdaterProtocol
     where ObservationModel: KalmanObservationModel
 {
+    /// Corrects the state error covariance based on innovation vector and Kalman update.
+    ///
+    /// Implements the following literature formulas:
+    ///
+    /// ```
+    /// P'(k) = A * P(k-1) * At + Q
+    /// K(k) = P'(k) * Ht * (H * P'(k) * Ht + R)^(-1)
+    /// x(k) = x'(k) + K(k) * (z(k) - H * x'(k))
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - prediction: The prediction used for prediction step.
+    ///   - observation: The observation used for prediction step.
+    ///   - control: The control used for prediction step.
     public func updated(
         prediction: Estimate,
         observation: Observation
     ) -> Estimate {
-        return self.updated(prediction: prediction, observation: observation) { x in
-            let zP = self.observationModel.apply(state: x)
-            let h = self.observationModel.jacobian(state: x)
-            return (zP, h)
-        }
+        let x = prediction.state
+        let p = prediction.covariance
+
+        let z = observation
+
+        let r = self.observationNoise
+        let i = self.identity(size: x.dimensions)
+
+        // Calculate z prediction and H: z'(k), H
+        let zP = self.observationModel.apply(state: x)
+        let h = self.observationModel.jacobian(state: x)
+
+        // Calculate transposed H:
+        let hT = h.transposed()
+
+        // Calculate innovation covariance matrix and its inverse:
+        // S(k) = H * P'(k) * Ht + R
+        let s = (h * p * hT) + r
+
+        // Calculate inverse of S:
+        // Si = S(k)^(-1)
+        let sI = s.inversed()
+
+        // Update kalman gain:
+        // K(k) = P'(k) * Ht * Si
+        let k = p * hT * sI
+
+        // Calculate innovation:
+        // y(k) = z(k) - z'(k)
+        let y = z - zP
+
+        // Correct state using Kalman gain:
+        // x(k) = x'(k) + K(k) * y(k)
+        let xP = x + (k * y)
+
+        // P(k) = (I - K(k) * H) * P'(k)
+        let pP = (i - (k * h)) * p
+
+        return KalmanEstimate(state: xP, covariance: pP)
     }
 }
 
