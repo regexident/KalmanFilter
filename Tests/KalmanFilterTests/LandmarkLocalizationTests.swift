@@ -123,18 +123,19 @@ final class LandmarkLocalizationTests: XCTestCase {
             }
         }
 
-        var kalmanFilter: ContextualKalmanFilter<Landmark, MotionModel, ObservationModel> = .init(
+        var kalmanFilter = KalmanFilter(
             estimate: estimate,
             predictor: KalmanPredictor(
                 motionModel: self.motionModel,
                 processNoise: self.processNoise
-            )
-        ) { landmark in
-            return KalmanUpdater(
-                observationModel: self.observationModel(landmark: landmark),
-                observationNoise: self.observationNoise
-            )
-        }
+            ),
+            updater: MultiModalKalmanUpdater { landmark in
+                return KalmanUpdater(
+                    observationModel: self.observationModel(landmark: landmark),
+                    observationNoise: self.observationNoise
+                )
+            }
+        )
 
         let filteredStates: [Vector<Double>] = Swift.zip(controls, observations).map { argument in
             let (control, observations) = argument

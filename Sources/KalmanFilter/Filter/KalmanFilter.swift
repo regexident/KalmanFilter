@@ -61,12 +61,16 @@ extension KalmanFilter: Statable {
     public typealias State = Vector<Double>
 }
 
-extension KalmanFilter: Controllable {
-    public typealias Control = Vector<Double>
+extension KalmanFilter: Controllable
+    where Predictor: Controllable
+{
+    public typealias Control = Predictor.Control
 }
 
-extension KalmanFilter: Observable {
-    public typealias Observation = Vector<Double>
+extension KalmanFilter: Observable
+    where Updater: Observable
+{
+    public typealias Observation = Updater.Observation
 }
 
 extension KalmanFilter: Estimatable {
@@ -91,8 +95,7 @@ extension KalmanFilter: BayesPredictor
 
 extension KalmanFilter: ControllableBayesPredictor
     where Predictor: ControllableBayesPredictor,
-          Predictor.Estimate == Estimate,
-          Predictor.Control == Control
+          Predictor.Estimate == Estimate
 {
     public func predicted(
         estimate: Estimate,
@@ -107,8 +110,7 @@ extension KalmanFilter: ControllableBayesPredictor
 
 extension KalmanFilter: BayesUpdater
     where Updater: BayesUpdater,
-          Updater.Estimate == Estimate,
-          Updater.Observation == Observation
+          Updater.Estimate == Estimate
 {
     public func updated(
         prediction: Estimate,
@@ -125,8 +127,7 @@ extension KalmanFilter: BayesFilter
     where Predictor: BayesPredictor,
           Updater: BayesUpdater,
           Predictor.Estimate == Estimate,
-          Updater.Estimate == Estimate,
-          Updater.Observation == Observation
+          Updater.Estimate == Estimate
 {
     public func filtered(
         estimate: Estimate,
@@ -147,9 +148,7 @@ extension KalmanFilter: ControllableBayesFilter
     where Predictor: ControllableBayesPredictor,
           Updater: BayesUpdater,
           Predictor.Estimate == Estimate,
-          Predictor.Control == Control,
-          Updater.Estimate == Estimate,
-          Updater.Observation == Observation
+          Updater.Estimate == Estimate
 {
     public func filtered(
         estimate: Estimate,

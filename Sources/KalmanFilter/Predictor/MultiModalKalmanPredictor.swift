@@ -59,22 +59,6 @@ extension MultiModalKalmanPredictor: Estimatable
     public typealias Estimate = Predictor.Estimate
 }
 
-//extension MultiModalKalmanPredictor: BayesPredictor
-//    where MotionModel: KalmanMotionModel
-//{
-//    public func predicted(estimate: Estimate) -> Estimate {
-//        return self.withPredictor(for: observation.context) { updater in
-//            return updater.updated(prediction: prediction, observation: observation.value)
-//        }
-//    }
-//}
-//
-//extension MultiModalKalmanPredictor: KalmanPredictorProtocol
-//    where MotionModel: KalmanMotionModel
-//{
-//    // Nothing
-//}
-
 extension MultiModalKalmanPredictor: ControllableBayesPredictor
     where Predictor: ControllableBayesPredictor
 {
