@@ -142,7 +142,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             for (landmark, observation) in Swift.zip(landmarks, observations) {
                 let _ = kalmanFilter.filter(
                     control: control,
-                    observation: Contextual(context: landmark, value: observation)
+                    observation: MultiModal(model: landmark, value: observation)
                 )
             }
             return kalmanFilter.estimate.state

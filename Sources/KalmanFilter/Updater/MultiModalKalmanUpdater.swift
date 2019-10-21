@@ -7,25 +7,25 @@ import StateSpaceModel
 
 // swiftlint:disable all identifier_name
 
-public class MultiModalKalmanUpdater<Context, Updater>
-    where Context: Hashable
+public class MultiModalKalmanUpdater<Model, Updater>
+    where Model: Hashable
 {
-    public var updaters: [Context: Updater] = [:]
-    public var closure: (Context) -> Updater
+    public var updaters: [Model: Updater] = [:]
+    public var closure: (Model) -> Updater
 
     public init(
-        closure: @escaping (Context) -> Updater
+        closure: @escaping (Model) -> Updater
     ) {
         self.closure = closure
     }
 
     private func withUpdater<T>(
-        for context: Context,
+        for model: Model,
         _ closure: (Updater) -> T
     ) -> T {
-        let updater = self.updaters[context] ?? self.closure(context)
+        let updater = self.updaters[model] ?? self.closure(model)
         let result = closure(updater)
-        self.updaters[context] = updater
+        self.updaters[model] = updater
         return result
     }
 }
@@ -50,7 +50,7 @@ extension MultiModalKalmanUpdater: Statable
 extension MultiModalKalmanUpdater: Observable
     where Updater: Observable
 {
-    public typealias Observation = Contextual<Context, Updater.Observation>
+    public typealias Observation = MultiModal<Model, Updater.Observation>
 }
 
 extension MultiModalKalmanUpdater: Estimatable
@@ -66,7 +66,7 @@ extension MultiModalKalmanUpdater: BayesUpdater
         prediction: Estimate,
         observation: Observation
     ) -> Estimate {
-        return self.withUpdater(for: observation.context) { updater in
+        return self.withUpdater(for: observation.model) { updater in
             return updater.updated(prediction: prediction, observation: observation.value)
         }
     }
