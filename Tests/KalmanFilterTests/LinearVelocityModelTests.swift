@@ -77,8 +77,8 @@ final class LinearVelocityModelTests: XCTestCase {
         0.0, // Velocity Y
     ]
 
-    func estimate() -> (state: Vector<Double>, covariance: Matrix<Double>) {
-        return (
+    func estimate() -> KalmanEstimate {
+        return KalmanEstimate(
             state: self.initialState,
             covariance: Matrix.diagonal(
                 rows: 4,

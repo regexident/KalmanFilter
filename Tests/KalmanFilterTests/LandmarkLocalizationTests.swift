@@ -1,6 +1,7 @@
 import XCTest
 
 import Surge
+import BayesFilter
 import StateSpace
 import StateSpaceModel
 
@@ -87,7 +88,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             0.0, // target velocity y
         ]
 
-        let estimate: (state: Vector<Double>, covariance: Matrix<Double>) = (
+        let estimate: KalmanEstimate = .init(
             state: initialState,
             covariance: Matrix.diagonal(
                 rows: self.dimensions.state,

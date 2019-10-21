@@ -59,7 +59,7 @@ final class LocalizationTests: XCTestCase {
             0.0, // self position y
         ]
         
-        let estimate: (state: Vector<Double>, covariance: Matrix<Double>) = (
+        let estimate: KalmanEstimate = .init(
             state: initialState,
             covariance: Matrix.diagonal(
                 rows: self.dimensions.state,

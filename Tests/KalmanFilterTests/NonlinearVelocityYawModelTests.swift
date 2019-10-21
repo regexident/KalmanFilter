@@ -82,8 +82,8 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
         0.0, // Yaw Rate
     ]
 
-    func estimate() -> (state: Vector<Double>, covariance: Matrix<Double>) {
-        return (
+    func estimate() -> KalmanEstimate {
+        return KalmanEstimate(
             state: self.initialState,
             covariance: Matrix.diagonal(
                 rows: 5,

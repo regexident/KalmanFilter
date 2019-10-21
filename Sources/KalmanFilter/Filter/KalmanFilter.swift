@@ -74,16 +74,11 @@ extension KalmanFilter: Observable
 }
 
 extension KalmanFilter: Estimatable {
-    public typealias Estimate = (
-        /// State vector (aka `x` in the literature)
-        state: Vector<Double>,
-        /// Estimate covariance matrix (aka `P`, or sometimes `Σ` in the literature)
-        covariance: Matrix<Double>
-    )
+    public typealias Estimate = KalmanEstimate
 }
 
-extension KalmanFilter: BayesPredictor
-    where Predictor: BayesPredictor,
+extension KalmanFilter: BayesPredictorProtocol
+    where Predictor: BayesPredictorProtocol,
           Predictor.Estimate == Estimate
 {
     public func predicted(estimate: Estimate) -> Estimate {
@@ -93,8 +88,8 @@ extension KalmanFilter: BayesPredictor
     }
 }
 
-extension KalmanFilter: ControllableBayesPredictor
-    where Predictor: ControllableBayesPredictor,
+extension KalmanFilter: ControllableBayesPredictorProtocol
+    where Predictor: ControllableBayesPredictorProtocol,
           Predictor.Estimate == Estimate
 {
     public func predicted(
@@ -108,8 +103,8 @@ extension KalmanFilter: ControllableBayesPredictor
     }
 }
 
-extension KalmanFilter: BayesUpdater
-    where Updater: BayesUpdater,
+extension KalmanFilter: BayesUpdaterProtocol
+    where Updater: BayesUpdaterProtocol,
           Updater.Estimate == Estimate
 {
     public func updated(
@@ -123,9 +118,9 @@ extension KalmanFilter: BayesUpdater
     }
 }
 
-extension KalmanFilter: BayesFilter
-    where Predictor: BayesPredictor,
-          Updater: BayesUpdater,
+extension KalmanFilter: BayesFilterProtocol
+    where Predictor: BayesPredictorProtocol,
+          Updater: BayesUpdaterProtocol,
           Predictor.Estimate == Estimate,
           Updater.Estimate == Estimate
 {
@@ -144,9 +139,9 @@ extension KalmanFilter: BayesFilter
     }
 }
 
-extension KalmanFilter: ControllableBayesFilter
-    where Predictor: ControllableBayesPredictor,
-          Updater: BayesUpdater,
+extension KalmanFilter: ControllableBayesFilterProtocol
+    where Predictor: ControllableBayesPredictorProtocol,
+          Updater: BayesUpdaterProtocol,
           Predictor.Estimate == Estimate,
           Updater.Estimate == Estimate
 {

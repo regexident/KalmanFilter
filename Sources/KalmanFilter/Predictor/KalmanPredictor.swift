@@ -7,11 +7,13 @@ import StateSpaceModel
 
 // swiftlint:disable all identifier_name
 
-public protocol KalmanPredictorProtocol: BayesPredictor {
+public typealias MultiModalKalmanPredictor = MultiModalBayesPredictor
+
+public protocol KalmanPredictorProtocol: BayesPredictorProtocol {
     associatedtype MotionModel: KalmanMotionModel
 }
 
-public protocol ControllableKalmanPredictorProtocol: ControllableBayesPredictor {
+public protocol ControllableKalmanPredictorProtocol: ControllableBayesPredictorProtocol {
     associatedtype MotionModel: ControllableKalmanMotionModel
 }
 
@@ -67,9 +69,10 @@ public class KalmanPredictor<MotionModel> {
     private func predicted(
         estimate: Estimate,
         applyModel: (Vector<Double>) -> (Vector<Double>, Matrix<Double>)
-    ) -> (Vector<Double>, Matrix<Double>) {
+    ) -> KalmanEstimate {
         let x = estimate.state
         let p = estimate.covariance
+        
         let q = self.processNoise
 
         // Calculate x prediction and A:
@@ -81,7 +84,7 @@ public class KalmanPredictor<MotionModel> {
         // P'(k) = A * P(k-1) * At + Q
         let pP = (a * p * aT) + q
 
-        return (state: xP, covariance: pP)
+        return KalmanEstimate(state: xP, covariance: pP)
     }
 }
 
@@ -114,15 +117,10 @@ extension KalmanPredictor: Controllable {
 }
 
 extension KalmanPredictor: Estimatable {
-    public typealias Estimate = (
-        /// State vector (aka `x` in the literature)
-        state: Vector<Double>,
-        /// Estimate covariance matrix (aka `P`, or sometimes `Σ` in the literature)
-        covariance: Matrix<Double>
-    )
+    public typealias Estimate = KalmanEstimate
 }
 
-extension KalmanPredictor: BayesPredictor
+extension KalmanPredictor: BayesPredictorProtocol
     where MotionModel: KalmanMotionModel
 {
     public func predicted(estimate: Estimate) -> Estimate {
@@ -140,7 +138,7 @@ extension KalmanPredictor: KalmanPredictorProtocol
     // Nothing
 }
 
-extension KalmanPredictor: ControllableBayesPredictor
+extension KalmanPredictor: ControllableBayesPredictorProtocol
     where MotionModel: ControllableKalmanMotionModel
 {
     public func predicted(estimate: Estimate, control: Control) -> Estimate {

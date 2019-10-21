@@ -7,7 +7,9 @@ import StateSpaceModel
 
 // swiftlint:disable all identifier_name
 
-public protocol KalmanUpdaterProtocol: BayesUpdater {
+public typealias MultiModalKalmanUpdater = MultiModalBayesUpdater
+
+public protocol KalmanUpdaterProtocol: BayesUpdaterProtocol {
     associatedtype ObservationModel: KalmanObservationModel
 }
 
@@ -78,11 +80,13 @@ public class KalmanUpdater<ObservationModel> {
     ///   - observation: The observation used for prediction step.
     ///   - control: The control used for prediction step.
     private func updated(
-        prediction: (Vector<Double>, Matrix<Double>),
+        prediction: Estimate,
         observation: Vector<Double>,
         applyModel: (Vector<Double>) -> (Vector<Double>, Matrix<Double>)
-    ) -> (Vector<Double>, Matrix<Double>) {
-        let (x, p) = prediction
+    ) -> KalmanEstimate {
+        let x = prediction.state
+        let p = prediction.covariance
+
         let z = observation
 
         let r = self.observationNoise
@@ -117,7 +121,7 @@ public class KalmanUpdater<ObservationModel> {
         // P(k) = (I - K(k) * H) * P'(k)
         let pP = (i - (k * h)) * p
 
-        return (state: xP, covariance: pP)
+        return KalmanEstimate(state: xP, covariance: pP)
     }
 }
 
@@ -150,15 +154,10 @@ extension KalmanUpdater: Observable {
 }
 
 extension KalmanUpdater: Estimatable {
-    public typealias Estimate = (
-        /// State vector (aka `x` in the literature)
-        state: Vector<Double>,
-        /// Estimate covariance matrix (aka `P`, or sometimes `Σ` in the literature)
-        covariance: Matrix<Double>
-    )
+    public typealias Estimate = KalmanEstimate
 }
 
-extension KalmanUpdater: BayesUpdater
+extension KalmanUpdater: BayesUpdaterProtocol
     where ObservationModel: KalmanObservationModel
 {
     public func updated(

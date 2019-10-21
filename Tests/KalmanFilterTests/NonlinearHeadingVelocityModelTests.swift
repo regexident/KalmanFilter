@@ -62,6 +62,7 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
         columns: dimensions.observation,
         repeatedValue: 2.0
     ).squared()
+
     lazy var predictor: KalmanPredictor = .init(
         motionModel: self.motionModel,
         processNoise: self.processNoise
@@ -79,8 +80,8 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
         0.0, // Velocity
     ]
 
-    func estimate() -> (state: Vector<Double>, covariance: Matrix<Double>) {
-        return (
+    func estimate() -> KalmanEstimate {
+        return KalmanEstimate(
             state: self.initialState,
             covariance: Matrix.diagonal(
                 rows: 4,
