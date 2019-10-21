@@ -1,6 +1,7 @@
 import XCTest
 
 import Surge
+import StateSpace
 import StateSpaceModel
 
 @testable import KalmanFilter
