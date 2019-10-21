@@ -7,11 +7,11 @@ import StateSpaceModel
 
 // swiftlint:disable all identifier_name
 
-public class KalmanFilter<MotionModel, ObservationModel>: EstimateReadWritable {
+public class KalmanFilter<Predictor, Updater>: EstimateReadWritable {
     public var estimate: Estimate
 
-    public var predictor: KalmanPredictor<MotionModel>
-    public var updater: KalmanUpdater<ObservationModel>
+    public var predictor: Predictor
+    public var updater: Updater
 
     /// Creates a Kalman Filter with a given initial process state `estimate`.
     ///
@@ -37,8 +37,8 @@ public class KalmanFilter<MotionModel, ObservationModel>: EstimateReadWritable {
     ///   - updater: The kalman filter's internal updater.
     public init(
         estimate: Estimate,
-        predictor: KalmanPredictor<MotionModel>,
-        updater: KalmanUpdater<ObservationModel>
+        predictor: Predictor,
+        updater: Updater
     ) {
         self.estimate = estimate
         self.predictor = predictor
@@ -48,8 +48,12 @@ public class KalmanFilter<MotionModel, ObservationModel>: EstimateReadWritable {
 
 extension KalmanFilter: DimensionsValidatable {
     public func validate(for dimensions: DimensionsProtocol) throws {
-        try self.predictor.validate(for: dimensions)
-        try self.updater.validate(for: dimensions)
+        if let predictor = self.predictor as? DimensionsValidatable {
+            try predictor.validate(for: dimensions)
+        }
+        if let updater = self.updater as? DimensionsValidatable {
+            try updater.validate(for: dimensions)
+        }
     }
 }
 
@@ -75,7 +79,8 @@ extension KalmanFilter: Estimatable {
 }
 
 extension KalmanFilter: BayesPredictor
-    where MotionModel: KalmanMotionModel
+    where Predictor: BayesPredictor,
+          Predictor.Estimate == Estimate
 {
     public func predicted(estimate: Estimate) -> Estimate {
         return self.predictor.predicted(
@@ -85,7 +90,9 @@ extension KalmanFilter: BayesPredictor
 }
 
 extension KalmanFilter: ControllableBayesPredictor
-    where MotionModel: ControllableKalmanMotionModel
+    where Predictor: ControllableBayesPredictor,
+          Predictor.Estimate == Estimate,
+          Predictor.Control == Control
 {
     public func predicted(
         estimate: Estimate,
@@ -99,7 +106,9 @@ extension KalmanFilter: ControllableBayesPredictor
 }
 
 extension KalmanFilter: BayesUpdater
-    where ObservationModel: KalmanObservationModel
+    where Updater: BayesUpdater,
+          Updater.Estimate == Estimate,
+          Updater.Observation == Observation
 {
     public func updated(
         prediction: Estimate,
@@ -113,7 +122,11 @@ extension KalmanFilter: BayesUpdater
 }
 
 extension KalmanFilter: BayesFilter
-    where MotionModel: KalmanMotionModel, ObservationModel: KalmanObservationModel
+    where Predictor: BayesPredictor,
+          Updater: BayesUpdater,
+          Predictor.Estimate == Estimate,
+          Updater.Estimate == Estimate,
+          Updater.Observation == Observation
 {
     public func filtered(
         estimate: Estimate,
@@ -131,7 +144,12 @@ extension KalmanFilter: BayesFilter
 }
 
 extension KalmanFilter: ControllableBayesFilter
-    where MotionModel: ControllableKalmanMotionModel, ObservationModel: KalmanObservationModel
+    where Predictor: ControllableBayesPredictor,
+          Updater: BayesUpdater,
+          Predictor.Estimate == Estimate,
+          Predictor.Control == Control,
+          Updater.Estimate == Estimate,
+          Updater.Observation == Observation
 {
     public func filtered(
         estimate: Estimate,

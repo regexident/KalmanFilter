@@ -7,6 +7,10 @@ import StateSpaceModel
 
 // swiftlint:disable all identifier_name
 
+public protocol KalmanUpdaterProtocol: BayesUpdater {
+    associatedtype ObservationModel: KalmanObservationModel
+}
+
 public class KalmanUpdater<ObservationModel> {
     /// Observation model (used for correction).
     public var observationModel: ObservationModel
@@ -167,4 +171,10 @@ extension KalmanUpdater: BayesUpdater
             return (zP, h)
         }
     }
+}
+
+extension KalmanUpdater: KalmanUpdaterProtocol
+    where ObservationModel: KalmanObservationModel
+{
+    // Nothing
 }

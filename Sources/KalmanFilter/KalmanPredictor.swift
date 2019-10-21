@@ -7,6 +7,14 @@ import StateSpaceModel
 
 // swiftlint:disable all identifier_name
 
+public protocol KalmanPredictorProtocol: BayesPredictor {
+    associatedtype MotionModel: KalmanMotionModel
+}
+
+public protocol ControllableKalmanPredictorProtocol: ControllableBayesPredictor {
+    associatedtype MotionModel: ControllableKalmanMotionModel
+}
+
 public class KalmanPredictor<MotionModel> {
     /// Motion model (used for prediction).
     public var motionModel: MotionModel
@@ -126,6 +134,12 @@ extension KalmanPredictor: BayesPredictor
     }
 }
 
+extension KalmanPredictor: KalmanPredictorProtocol
+    where MotionModel: KalmanMotionModel
+{
+    // Nothing
+}
+
 extension KalmanPredictor: ControllableBayesPredictor
     where MotionModel: ControllableKalmanMotionModel
 {
@@ -137,4 +151,10 @@ extension KalmanPredictor: ControllableBayesPredictor
             return (xP, a)
         }
     }
+}
+
+extension KalmanPredictor: ControllableKalmanPredictorProtocol
+    where MotionModel: ControllableKalmanMotionModel
+{
+    // Nothing
 }
