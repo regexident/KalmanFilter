@@ -28,25 +28,6 @@ public class KalmanPredictor<MotionModel> {
     /// Default: zero matrix.
     public var processNoise: Matrix<Double>
 
-    /// Creates a Kalman Filter with a given initial process state `estimate`.
-    ///
-    /// Unless a more appropriate initial `estimate` is available
-    /// the following default provides reasonably good results:
-    ///
-    /// ```
-    /// let processNoise: Matrix<Double> = .init(
-    ///     diagonal: <#variance#>,
-    ///     size: <#state dimensions#>
-    /// )
-    /// let kalmanPredictor = KalmanPredictor(
-    ///     motionModel: <#motionModel#>,
-    ///     processNoise: <#processNoise#>
-    /// )
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - motionModel: The process model.
-    ///   - processNoise: The process noise covariance.
     public init(
         motionModel: MotionModel,
         processNoise: Matrix<Double>

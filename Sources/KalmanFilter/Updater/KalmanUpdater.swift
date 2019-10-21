@@ -27,25 +27,6 @@ public class KalmanUpdater<ObservationModel> {
 
     private var cachedIdentity: Matrix<Double>? = nil
 
-    /// Creates a Kalman Filter with a given initial process state `estimate`.
-    ///
-    /// Unless a more appropriate initial `estimate` is available
-    /// the following default provides reasonably good results:
-    ///
-    /// ```
-    /// let observationNoise: Matrix<Double> = .init(
-    ///     diagonal: <#variance#>,
-    ///     size: <#state dimensions#>
-    /// )
-    /// let kalmanUpdater = KalmanUpdater(
-    ///     observationModel: <#observationModel#>,
-    ///     observationNoise: <#observationNoise#>
-    /// )
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - observationModel: The observation model.
-    ///   - observationNoise: The observation noise covariance.
     public init(
         observationModel: ObservationModel,
         observationNoise: Matrix<Double>
