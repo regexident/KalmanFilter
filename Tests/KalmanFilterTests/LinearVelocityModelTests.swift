@@ -8,7 +8,7 @@ import StateSpaceModel
 /// Modelled after:
 /// https://github.com/balzer82/Kalman/blob/master/Kalman-Filter-CV.ipynb
 final class LinearVelocityModelTests: XCTestCase {
-    typealias MotionModel = ControllableLinearMotionModel<LinearMotionModel>
+    typealias MotionModel = ControllableLinearMotionModel<LinearMotionModel, LinearControlModel>
     typealias ObservationModel = LinearObservationModel
 
     let time: Double = 0.1 // time delta
@@ -21,13 +21,13 @@ final class LinearVelocityModelTests: XCTestCase {
     )
 
     lazy var motionModel: MotionModel = .init(
-        state: [
+        a: [
             [1.0, 0.0, self.time, 0.0],
             [0.0, 1.0, 0.0, self.time],
             [0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
         ],
-        control: [
+        b: [
             [0.0, 0.0],
             [0.0, 0.0],
             [self.time, 0.0],

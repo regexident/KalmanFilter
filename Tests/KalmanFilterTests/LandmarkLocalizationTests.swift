@@ -6,7 +6,7 @@ import StateSpaceModel
 @testable import KalmanFilter
 
 final class LandmarkLocalizationTests: XCTestCase {
-    typealias MotionModel = ControllableLinearMotionModel<LinearMotionModel>
+    typealias MotionModel = ControllableLinearMotionModel<LinearMotionModel, LinearControlModel>
     typealias ObservationModel = NonlinearObservationModel
 
     struct Landmark: Hashable {
@@ -37,13 +37,13 @@ final class LandmarkLocalizationTests: XCTestCase {
     )
 
     lazy var motionModel: MotionModel = .init(
-        state: [
+        a: [
             [1.0, 0.0, self.time, 0.0],
             [0.0, 1.0, 0.0, self.time],
             [0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
         ],
-        control: [
+        b: [
             [0.0, 0.0],
             [0.0, 0.0],
             [self.time, 0.0],

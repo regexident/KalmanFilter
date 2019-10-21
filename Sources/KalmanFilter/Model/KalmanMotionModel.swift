@@ -5,13 +5,16 @@ import StateSpaceModel
 // MARK: - Protocols
 
 public protocol KalmanMotionModel: UncontrollableMotionModelProtocol & DifferentiableMotionModelProtocol
-    where State == Vector<Double>, Jacobian == Matrix<Double>
+    where State == Vector<Double>,
+          Jacobian == Matrix<Double>
 {
     // Nothing
 }
 
 public protocol ControllableKalmanMotionModel: ControllableMotionModelProtocol & ControllableDifferentiableMotionModelProtocol
-    where State == Vector<Double>, Control == Vector<Double>, Jacobian == Matrix<Double>
+    where State == Vector<Double>,
+          Control == Vector<Double>,
+          Jacobian == Matrix<Double>
 {
     // Nothing
 }
@@ -45,7 +48,8 @@ extension BrownianMotionModel: ControllableKalmanMotionModel
 }
 
 extension ControllableLinearMotionModel: ControllableKalmanMotionModel
-    where MotionModel: KalmanMotionModel
+    where MotionModel: KalmanMotionModel,
+          ControlModel: KalmanControlModel
 {
     // Nothing
 }

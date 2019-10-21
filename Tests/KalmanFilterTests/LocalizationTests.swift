@@ -6,7 +6,7 @@ import StateSpaceModel
 @testable import KalmanFilter
 
 final class LocalizationTests: XCTestCase {
-    typealias MotionModel = ControllableLinearMotionModel<LinearMotionModel>
+    typealias MotionModel = ControllableLinearMotionModel<LinearMotionModel, LinearControlModel>
     typealias ObservationModel = NonlinearObservationModel
 
     let dimensions: Dimensions = Dimensions(
@@ -16,13 +16,13 @@ final class LocalizationTests: XCTestCase {
     )
 
     lazy var motionModel: MotionModel = .init(
-        state: [
+        a: [
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
         ],
-        control: [
+        b: [
             [0.0, 0.0],
             [0.0, 0.0],
             [1.0, 0.0],

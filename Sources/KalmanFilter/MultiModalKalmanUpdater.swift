@@ -41,27 +41,26 @@ extension MultiModalKalmanUpdater: DimensionsValidatable {
     }
 }
 
-extension MultiModalKalmanUpdater: Statable {
-    public typealias State = Vector<Double>
+extension MultiModalKalmanUpdater: Statable
+    where Updater: Statable
+{
+    public typealias State = Updater.State
 }
 
-extension MultiModalKalmanUpdater: Observable {
-    public typealias Observation = Contextual<Context, Vector<Double>>
+extension MultiModalKalmanUpdater: Observable
+    where Updater: Observable
+{
+    public typealias Observation = Contextual<Context, Updater.Observation>
 }
 
-extension MultiModalKalmanUpdater: Estimatable {
-    public typealias Estimate = (
-        /// State vector (aka `x` in the literature)
-        state: Vector<Double>,
-        /// Estimate covariance matrix (aka `P`, or sometimes `Σ` in the literature)
-        covariance: Matrix<Double>
-    )
+extension MultiModalKalmanUpdater: Estimatable
+    where Updater: Estimatable
+{
+    public typealias Estimate = Updater.Estimate
 }
 
 extension MultiModalKalmanUpdater: BayesUpdater
-    where Updater: BayesUpdater & Observable,
-          Updater.Estimate == Estimate,
-          Updater.Observation == Vector<Double>
+    where Updater: BayesUpdater
 {
     public func updated(
         prediction: Estimate,
@@ -74,9 +73,7 @@ extension MultiModalKalmanUpdater: BayesUpdater
 }
 
 extension MultiModalKalmanUpdater: KalmanUpdaterProtocol
-    where Updater: KalmanUpdaterProtocol & Observable,
-          Updater.Estimate == Estimate,
-          Updater.Observation == Vector<Double>
+    where Updater: KalmanUpdaterProtocol
 {
     public typealias ObservationModel = Updater.ObservationModel
 }
