@@ -28,11 +28,10 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
     lazy var motionModel: MotionModel = .init(dimensions: self.dimensions) { state, control in
         let (x, y, h) = (state[0], state[1], state[2]) // pos-x, pos-y, heading
         let (v, w) = (control[0], control[1]) // velocity, yaw-rate
-        let t = self.time // delta time
         return [
-            x + (v / w) * (sin(h + w * t) - sin(h)),
-            y + (v / w) * (-cos(h + w * t) + cos(h)),
-            h + w * t,
+            x + (v / w) * (sin(h + w * self.time) - sin(h)),
+            y + (v / w) * (-cos(h + w * self.time) + cos(h)),
+            h + w * self.time,
             v,
             w,
         ]

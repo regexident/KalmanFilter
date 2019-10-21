@@ -50,10 +50,10 @@ final class NonlinearYawAccelerationModelTests: XCTestCase {
         let acceleration = 1.0 // max expected acceleration in m/sec^2
         let yaw = 0.1 // max expected yaw in radians/s^2
         let qs: Matrix<Double> = [
-            [acceleration * (0.5 * time * time)], // translation in m (double-integrated acceleration)
-            [acceleration * (0.5 * time * time)], // translation in m (double-integrated acceleration)
-            [yaw * time], // heading in radians/s (integrated of yaw)
-            [acceleration * time], // velocity in m/s (integrated acceleration)
+            [acceleration * (0.5 * self.time * self.time)], // translation in m (double-integrated acceleration)
+            [acceleration * (0.5 * self.time * self.time)], // translation in m (double-integrated acceleration)
+            [yaw * self.time], // heading in radians/s (integrated of yaw)
+            [acceleration * self.time], // velocity in m/s (integrated acceleration)
             [yaw * 1.0], // yaw in radians/s^2
             [acceleration * 1.0], // acceleration in m/s^2
         ]

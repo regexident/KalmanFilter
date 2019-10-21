@@ -22,20 +22,20 @@ final class LinearAccelerationModelTests: XCTestCase {
 
     lazy var motionModel: MotionModel = .init(
         a: [
-            [1.0, 0.0, time, 0.0, 0.5 * time * time, 0.0],
-            [0.0, 1.0, 0.0, time, 0.0, 0.5 * time * time],
-            [0.0, 0.0, 1.0, 0.0, time, 0.0],
-            [0.0, 0.0, 0.0, 1.0, 0.0, time],
+            [1.0, 0.0, self.time, 0.0, 0.5 * self.time * self.time, 0.0],
+            [0.0, 1.0, 0.0, self.time, 0.0, 0.5 * self.time * self.time],
+            [0.0, 0.0, 1.0, 0.0, self.time, 0.0],
+            [0.0, 0.0, 0.0, 1.0, 0.0, self.time],
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         ],
         b: [
             [0.0, 0.0],
             [0.0, 0.0],
-            [0.5 * time * time, 0.0],
-            [0.0, 0.5 * time * time],
-            [time, 0.0],
-            [0.0, time],
+            [0.5 * self.time * self.time, 0.0],
+            [0.0, 0.5 * self.time * self.time],
+            [self.time, 0.0],
+            [0.0, self.time],
         ]
     )
 
@@ -49,10 +49,10 @@ final class LinearAccelerationModelTests: XCTestCase {
     lazy var processNoise: Matrix<Double> = {
         let acceleration = 1.0 // max expected acceleration in m/sec^2
         let qs: Matrix<Double> = [
-            [acceleration * 0.5 * time * time], // translation in m (double-integrated acceleration)
-            [acceleration * 0.5 * time * time], // translation in m (double-integrated acceleration)
-            [acceleration * time], // velocity in m/s (integrated acceleration)
-            [acceleration * time], // velocity in m/s (integrated acceleration)
+            [acceleration * 0.5 * self.time * self.time], // translation in m (double-integrated acceleration)
+            [acceleration * 0.5 * self.time * self.time], // translation in m (double-integrated acceleration)
+            [acceleration * self.time], // velocity in m/s (integrated acceleration)
+            [acceleration * self.time], // velocity in m/s (integrated acceleration)
             [acceleration * 1.0], // acceleration in m/s^2
             [acceleration * 1.0], // acceleration in m/s^2
         ]
