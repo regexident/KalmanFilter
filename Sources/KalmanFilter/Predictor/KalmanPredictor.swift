@@ -40,8 +40,15 @@ public class KalmanPredictor<MotionModel> {
     ///
     /// Implements the following literature formulas:
     ///
+    /// Uncontrollable:
     /// ```
-    /// x'(k) = A * x(k-1) + B * u(k).
+    /// x'(k) = A * x(k-1)
+    /// P'(k) = A * P(k-1) * At + Q
+    /// ```
+    ///
+    /// Controllable:
+    /// ```
+    /// x'(k) = A * x(k-1) + B * u(k)
     /// P'(k) = A * P(k-1) * At + Q
     /// ```
     ///
@@ -104,6 +111,16 @@ extension KalmanPredictor: Estimatable {
 extension KalmanPredictor: BayesPredictorProtocol
     where MotionModel: KalmanMotionModel
 {
+    /// Predicts next state using current state and control and calculates probability estimate.
+    ///
+    /// Implements the following literature formulas:
+    ///
+    /// ```
+    /// x'(k) = A * x(k-1)
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - control: The control used for prediction step.
     public func predicted(estimate: Estimate) -> Estimate {
         return self.predicted(estimate: estimate) { (x: Vector<Double>) in
             let xP: Vector<Double> = self.motionModel.apply(state: x)
@@ -122,6 +139,16 @@ extension KalmanPredictor: KalmanPredictorProtocol
 extension KalmanPredictor: ControllableBayesPredictorProtocol
     where MotionModel: ControllableKalmanMotionModel
 {
+    /// Predicts next state using current state and control and calculates probability estimate.
+    ///
+    /// Implements the following literature formulas:
+    ///
+    /// ```
+    /// x'(k) = A * x(k-1) + B * u(k)
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - control: The control used for prediction step.
     public func predicted(estimate: Estimate, control: Control) -> Estimate {
         let u = control
         return self.predicted(estimate: estimate) { x in
