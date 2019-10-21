@@ -8,52 +8,27 @@ import StateSpaceModel
 // swiftlint:disable all identifier_name
 
 public class KalmanFilter<Predictor, Updater>: EstimateReadWritable {
+    public typealias Filter = BayesFilter<Predictor, Updater, Estimate>
+
     public var estimate: Estimate
+    public var filter: Filter
 
-    public var predictor: Predictor
-    public var updater: Updater
-
-    /// Creates a Kalman Filter with a given initial process state `estimate`.
-    ///
-    /// Unless a more appropriate initial `estimate` is available
-    /// the following default provides reasonably good results:
-    ///
-    /// ```
-    /// let state: Vector<Double> = .zero
-    /// let covariance: Matrix<Double> = .init(
-    ///     diagonal: <#variance#>,
-    ///     size: <#state dimensions#>
-    /// )
-    /// let estimate = (state: state, covariance: covariance)
-    /// let kalmanFilter = KalmanFilter(
-    ///     estimate: estimate,
-    ///     model: <#model#>
-    /// )
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - estimate: The initial process state estimate.
-    ///   - predictor: The kalman filter's internal predictor.
-    ///   - updater: The kalman filter's internal updater.
     public init(
         estimate: Estimate,
         predictor: Predictor,
         updater: Updater
     ) {
         self.estimate = estimate
-        self.predictor = predictor
-        self.updater = updater
+        self.filter = BayesFilter(
+            predictor: predictor,
+            updater: updater
+        )
     }
 }
 
 extension KalmanFilter: DimensionsValidatable {
     public func validate(for dimensions: DimensionsProtocol) throws {
-        if let predictor = self.predictor as? DimensionsValidatable {
-            try predictor.validate(for: dimensions)
-        }
-        if let updater = self.updater as? DimensionsValidatable {
-            try updater.validate(for: dimensions)
-        }
+        try self.filter.validate(for: dimensions)
     }
 }
 
@@ -82,7 +57,7 @@ extension KalmanFilter: BayesPredictorProtocol
           Predictor.Estimate == Estimate
 {
     public func predicted(estimate: Estimate) -> Estimate {
-        return self.predictor.predicted(
+        return self.filter.predicted(
             estimate: estimate
         )
     }
@@ -96,7 +71,7 @@ extension KalmanFilter: ControllableBayesPredictorProtocol
         estimate: Estimate,
         control: Control
     ) -> Estimate {
-        return self.predictor.predicted(
+        return self.filter.predicted(
             estimate: estimate,
             control: control
         )
@@ -111,7 +86,7 @@ extension KalmanFilter: BayesUpdaterProtocol
         prediction: Estimate,
         observation: Observation
     ) -> Estimate {
-        return self.updater.updated(
+        return self.filter.updated(
             prediction: prediction,
             observation: observation
         )
@@ -128,14 +103,10 @@ extension KalmanFilter: BayesFilterProtocol
         estimate: Estimate,
         observation: Observation
     ) -> Estimate {
-        let prediction = self.predictor.predicted(
-            estimate: estimate
-        )
-        let estimate = self.updater.updated(
-            prediction: prediction,
+        return self.filter.filtered(
+            estimate: estimate,
             observation: observation
         )
-        return estimate
     }
 }
 
@@ -150,14 +121,10 @@ extension KalmanFilter: ControllableBayesFilterProtocol
         control: Control,
         observation: Observation
     ) -> Estimate {
-        let prediction = self.predictor.predicted(
+        return self.filter.filtered(
             estimate: estimate,
-            control: control
-        )
-        let estimate = self.updater.updated(
-            prediction: prediction,
+            control: control,
             observation: observation
         )
-        return estimate
     }
 }
