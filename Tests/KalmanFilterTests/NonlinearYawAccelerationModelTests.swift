@@ -135,7 +135,8 @@ final class NonlinearYawAccelerationModelTests: XCTestCase {
 
         let filteredStates: [Vector<Double>] = Swift.zip(controls, observations).map { argument in
             let (control, observation) = argument
-            return kalmanFilter.filter(control: control, observation: observation).state
+            kalmanFilter.filter(control: control, observation: observation)
+            return kalmanFilter.estimate.state
         }
 
 //        self.printSheetAndFail(
