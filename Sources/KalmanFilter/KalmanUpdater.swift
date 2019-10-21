@@ -108,17 +108,12 @@ public class KalmanUpdater<ObservationModel> {
 
         // Correct state using Kalman gain:
         // x(k) = x'(k) + K(k) * y(k)
-        let state = x + (k * y)
+        let xP = x + (k * y)
 
         // P(k) = (I - K(k) * H) * P'(k)
-        let covariance = (i - (k * h)) * p
+        let pP = (i - (k * h)) * p
 
-        let estimate = (
-            state: state,
-            covariance: covariance
-        )
-
-        return estimate
+        return (state: xP, covariance: pP)
     }
 }
 
