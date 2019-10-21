@@ -1,0 +1,43 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "BayesFilter",
+        "repositoryURL": "https://github.com/regexident/BayesFilter",
+        "state": {
+          "branch": "master",
+          "revision": "23be41b1d11787503a749359e67ac3dfce4b0de7",
+          "version": null
+        }
+      },
+      {
+        "package": "StateSpace",
+        "repositoryURL": "https://github.com/regexident/StateSpace",
+        "state": {
+          "branch": "master",
+          "revision": "2a644e5916b2a5047cd2b35cdf997f1f198f4a07",
+          "version": null
+        }
+      },
+      {
+        "package": "StateSpaceModel",
+        "repositoryURL": "https://github.com/regexident/StateSpaceModel",
+        "state": {
+          "branch": "master",
+          "revision": "98d4adc42bd1643de47132a82d0cb3eb35f1319c",
+          "version": null
+        }
+      },
+      {
+        "package": "Surge",
+        "repositoryURL": "https://github.com/jounce/Surge",
+        "state": {
+          "branch": "master",
+          "revision": "2f35e097244c1c437ac9862fdd30b82f266c7ded",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
