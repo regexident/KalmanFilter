@@ -113,7 +113,7 @@ extension KalmanUpdater: BayesUpdaterProtocol
         let h = self.observationModel.jacobian(state: x)
 
         // Calculate transposed H:
-        let hT = h.transposed()
+        let hT = transpose(h)
 
         // Calculate innovation covariance matrix and its inverse:
         // S(k) = H * P'(k) * Ht + R
@@ -121,7 +121,7 @@ extension KalmanUpdater: BayesUpdaterProtocol
 
         // Calculate inverse of S:
         // Si = S(k)^(-1)
-        let sI = s.inversed()
+        let sI = inv(s)
 
         // Update kalman gain:
         // K(k) = P'(k) * Ht * Si

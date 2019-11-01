@@ -66,7 +66,7 @@ public class KalmanPredictor<MotionModel> {
         // Calculate x prediction and A:
         let (xP, a) = applyModel(x)
 
-        let aT = a.transposed()
+        let aT = transpose(a)
 
         // Calculate predicted probability estimate:
         // P'(k) = A * P(k-1) * At + Q
