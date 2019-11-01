@@ -13,7 +13,10 @@ final class LinearVelocityModelTests: XCTestCase {
     typealias ObservationModel = LinearObservationModel
 
     let time: Double = 0.1 // time delta
-    let velocity: (x: Double, y: Double) = (x: 20.0, y: 10.0) // in m/s
+    let velocity: (x: Double, y: Double) = (
+        x: 20.0, // velocity on x-axis
+        y: 10.0 // velocity on y-axis
+    ) // in m/s
 
     let dimensions: Dimensions = .init(
         state: 4, // [position x, position y, velocity x, velocity y]
@@ -51,14 +54,14 @@ final class LinearVelocityModelTests: XCTestCase {
             [accel * self.time], // velocity in m/s (integrated acceleration)
             [accel * self.time], // velocity in m/s (integrated acceleration)
         ]
-        return (qs * qs.transposed()).squared()
+        return pow((qs * transpose(qs)), 2.0)
     }()
 
-    lazy var observationNoise: Matrix<Double> = Matrix.diagonal(
+    lazy var observationNoise: Matrix<Double> = pow(Matrix.diagonal(
         rows: dimensions.observation,
         columns: dimensions.observation,
         repeatedValue: 2.0
-    ).squared()
+    ), 2.0)
 
     lazy var predictor: KalmanPredictor = .init(
         motionModel: self.motionModel,
@@ -70,32 +73,28 @@ final class LinearVelocityModelTests: XCTestCase {
         observationNoise: self.observationNoise
     )
 
-    let initialState: Vector<Double> = [
-        0.0, // Position X
-        0.0, // Position Y
-        0.0, // Velocity X
-        0.0, // Velocity Y
-    ]
+    func filter(control: (Int) -> Vector<Double>) -> Double {
+        let initialState: Vector<Double> = [
+            0.0, // Position X
+            0.0, // Position Y
+            0.0, // Velocity X
+            0.0, // Velocity Y
+        ]
 
-    func estimate() -> KalmanEstimate {
-        return KalmanEstimate(
-            state: self.initialState,
+        let estimate: KalmanEstimate = .init(
+            state: initialState,
             covariance: Matrix.diagonal(
                 rows: 4,
                 columns: 4,
                 repeatedValue: 1.0
             )
         )
-    }
-
-    func filter(control: (Int) -> Vector<Double>) -> Double {
-        let estimate = self.estimate()
 
         let sampleCount = 200
         let controls: [Vector<Double>] = (0..<sampleCount).map(control)
 
         let states = self.makeSignal(
-            initial: self.initialState,
+            initial: initialState,
             controls: controls,
             model: self.motionModel,
             processNoise: self.processNoise
@@ -103,7 +102,7 @@ final class LinearVelocityModelTests: XCTestCase {
 
         let observations: [Vector<Double>] = states.map { state in
             let observation: Vector<Double> = self.observationModel.apply(state: state)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: self.dimensions.observation)
+            let standardNoise: Vector<Double> = Vector.randomNormal(count: self.dimensions.observation)
             let noise: Vector<Double> = self.observationNoise * standardNoise
             return observation + noise
         }
@@ -162,7 +161,7 @@ final class LinearVelocityModelTests: XCTestCase {
     private func printSheetAndFail(
         trueStates: [Vector<Double>],
         estimatedStates: [Vector<Double>],
-        observations: [Vector<Double>]
+        observations: [Vector<Double>]? = nil
     ) {
         self.printSheet(trueStates: trueStates, estimatedStates: estimatedStates, observations: observations)
 

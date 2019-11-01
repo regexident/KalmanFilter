@@ -69,7 +69,7 @@ final class LocalizationTests: XCTestCase {
         )
         
         let interval = 0.05
-        let sampleCount = 500
+        let sampleCount = 200
         let controls: [Vector<Double>] = (0..<sampleCount).map { i in
             let a = Double(i) * interval
             let r = 7.5
@@ -87,7 +87,7 @@ final class LocalizationTests: XCTestCase {
         
         let observations: [Vector<Double>] = states.map { state in
             let observation: Vector<Double> = self.observationModel.apply(state: state)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: self.dimensions.observation)
+            let standardNoise: Vector<Double> = Vector.randomNormal(count: self.dimensions.observation)
             let noise: Vector<Double> = self.observationNoise * standardNoise
             return observation + noise
         }
@@ -124,7 +124,7 @@ final class LocalizationTests: XCTestCase {
     private func printSheetAndFail(
         trueStates: [Vector<Double>],
         estimatedStates: [Vector<Double>],
-        observations: [Vector<Double>]
+        observations: [Vector<Double>]? = nil
     ) {
         self.printSheet(trueStates: trueStates, estimatedStates: estimatedStates, observations: observations)
         

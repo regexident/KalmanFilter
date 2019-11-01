@@ -55,14 +55,14 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
             [acceleration * time], // velocity in m/s (integrated acceleration)
             [yaw * 1.0], // yaw in radians/s^2
         ]
-        return (qs * qs.transposed()).squared()
+        return pow((qs * transpose(qs)), 2.0)
     }()
 
-    lazy var observationNoise: Matrix<Double> = Matrix.diagonal(
+    lazy var observationNoise: Matrix<Double> = pow(Matrix.diagonal(
         rows: dimensions.observation,
         columns: dimensions.observation,
         repeatedValue: 2.0
-    ).squared()
+    ), 2.0)
 
     lazy var predictor: KalmanPredictor = .init(
         motionModel: self.motionModel,
@@ -74,28 +74,23 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
         observationNoise: self.observationNoise
     )
 
-    let initialState: Vector<Double> = [
-        0.0, // Position X
-        0.0, // Position Y
-        0.0, // Heading
-        0.0, // Velocity
-        0.0, // Yaw Rate
-    ]
+    func filter(control: (Int) -> Vector<Double>) -> Double {
+        let initialState: Vector<Double> = [
+            0.0, // Position X
+            0.0, // Position Y
+            0.0, // Heading
+            0.0, // Velocity
+            0.0, // Yaw Rate
+        ]
 
-    func estimate() -> KalmanEstimate {
-        return KalmanEstimate(
-            state: self.initialState,
+        let estimate: KalmanEstimate = .init(
+            state: initialState,
             covariance: Matrix.diagonal(
                 rows: 5,
                 columns: 5,
                 repeatedValue: 1.0
             )
         )
-    }
-
-    func filter(control: (Int) -> Vector<Double>) -> Double {
-        let estimate = self.estimate()
-        let initialState = self.initialState
 
         let sampleCount = 200
         let controls: [Vector<Double>] = (0..<sampleCount).map(control)
@@ -109,7 +104,7 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
 
         let observations: [Vector<Double>] = states.map { state in
             let observation: Vector<Double> = self.observationModel.apply(state: state)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: self.dimensions.observation)
+            let standardNoise: Vector<Double> = Vector.randomNormal(count: self.dimensions.observation)
             let noise: Vector<Double> = self.observationNoise * standardNoise
             return observation + noise
         }
@@ -168,7 +163,7 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
     private func printSheetAndFail(
         trueStates: [Vector<Double>],
         estimatedStates: [Vector<Double>],
-        observations: [Vector<Double>]
+        observations: [Vector<Double>]? = nil
     ) {
         self.printSheet(trueStates: trueStates, estimatedStates: estimatedStates, observations: observations)
 

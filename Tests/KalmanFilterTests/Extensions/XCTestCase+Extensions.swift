@@ -23,7 +23,7 @@ extension XCTestCase {
         
         for control in controls {
             state = model.apply(state: state, control: control)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: state.dimensions)
+            let standardNoise: Vector<Double> = Vector.randomNormal(count: state.dimensions)
             let noise: Vector<Double> = covariance * standardNoise
             signal.append(state + noise)
         }
@@ -49,7 +49,7 @@ extension XCTestCase {
 
         for _ in 0..<count {
             state = model.apply(state: state)
-            let standardNoise: Vector<Double> = Vector(gaussianRandom: state.dimensions)
+            let standardNoise: Vector<Double> = Vector.randomNormal(count: state.dimensions)
             let noise: Vector<Double> = covariance * standardNoise
             signal.append(state + noise)
         }
@@ -64,32 +64,44 @@ extension XCTestCase {
     internal func printSheet(
         trueStates: [Vector<Double>],
         estimatedStates: [Vector<Double>],
-        observations: [Vector<Double>]
+        observations: [Vector<Double>]? = nil
     ) {
-        assert(observations.count == trueStates.count)
-        assert(observations.count == estimatedStates.count)
-        
-        guard observations.count > 0 else {
-            return
+        let sampleCount = trueStates.count
+
+        assert(estimatedStates.count == sampleCount)
+
+        if let observations = observations {
+            assert(observations.count == sampleCount)
+
+            guard observations.count > 0 else {
+                return
+            }
         }
-        
+
         let headerCellsTrueStates = (0..<trueStates[0].dimensions).map { "True \($0)" }.joined(separator: ",")
         let headerCellsEstimatedStates = (0..<estimatedStates[0].dimensions).map { "Estimated \($0)" }.joined(separator: ",")
-        let headerCellsObservations = (0..<observations[0].dimensions).map { "Observation \($0)" }.joined(separator: ",")
+        let headerCellsEstimationFitness = "Fitness"
+        let headerCellsObservations = observations.map { observations in
+            (0..<observations[0].dimensions).map { "Observation \($0)" }.joined(separator: ",")
+        }
         let headerRow = [
-            "Time", headerCellsTrueStates, headerCellsEstimatedStates, headerCellsObservations
-        ].joined(separator: ",")
-        
+            "Time", headerCellsTrueStates, headerCellsEstimatedStates, headerCellsEstimationFitness, headerCellsObservations
+        ].compactMap { $0 }.joined(separator: ",")
+
         print(headerRow)
-        
-        for i in 0..<observations.count {
+
+        for i in 0..<sampleCount {
             let cellsTrueStates = trueStates[i].scalars.map { "\($0)" }.joined(separator: ",")
             let cellsEstimatedStates = estimatedStates[i].scalars.map { "\($0)" }.joined(separator: ",")
-            let cellsObservations = observations[i].scalars.map { "\($0)" }.joined(separator: ",")
+            let cellsEstimationFitness = "\(trueStates[i].distance(to: estimatedStates[i]))"
+
+            let cellsObservations = observations.map { observations in
+                observations[i].scalars.map { "\($0)" }.joined(separator: ",")
+            }
             let row = [
-                "\(i)", cellsTrueStates, cellsEstimatedStates, cellsObservations
-            ].joined(separator: ",")
-            
+                "\(i)", cellsTrueStates, cellsEstimatedStates, cellsEstimationFitness, cellsObservations
+            ].compactMap { $0 }.joined(separator: ",")
+
             print(row)
         }
     }

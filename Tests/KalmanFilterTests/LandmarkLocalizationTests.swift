@@ -71,7 +71,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             [accel * t], // velocity in m/s (integrated acceleration)
             [accel * t], // velocity in m/s (integrated acceleration)
         ]
-        return (qs * qs.transposed()).squared()
+        return pow((qs * transpose(qs)), 2.0)
     }()
 
     lazy var observationNoise: Matrix<Double> = .diagonal(
@@ -104,7 +104,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             Landmark(location: [10.0, 10.0]),
         ]
 
-        let sampleCount = 500
+        let sampleCount = 200
         let controls: [Vector<Double>] = (0..<sampleCount).map(control)
 
         let states = self.makeSignal(
@@ -118,7 +118,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             landmarks.map { landmark in
                 let observationModel = self.observationModel(landmark: landmark)
                 let observation: Vector<Double> = observationModel.apply(state: state)
-                let standardNoise: Vector<Double> = Vector(gaussianRandom: self.dimensions.observation)
+                let standardNoise: Vector<Double> = Vector.randomNormal(count: self.dimensions.observation)
                 let noise: Vector<Double> = self.observationNoise * standardNoise
                 let noisyObservation = observation + noise
                 return noisyObservation
@@ -154,7 +154,7 @@ final class LandmarkLocalizationTests: XCTestCase {
 //            trueStates: states,
 //            estimatedStates: filteredStates,
 //            observations: observations.map { observations in
-//                Vector(column: observations.map { $0[0] })
+//                Vector(observations.map { $0[0] })
 //            }
 //        )
 
@@ -196,7 +196,7 @@ final class LandmarkLocalizationTests: XCTestCase {
     private func printSheetAndFail(
         trueStates: [Vector<Double>],
         estimatedStates: [Vector<Double>],
-        observations: [Vector<Double>]
+        observations: [Vector<Double>]? = nil
     ) {
         self.printSheet(trueStates: trueStates, estimatedStates: estimatedStates, observations: observations)
 
