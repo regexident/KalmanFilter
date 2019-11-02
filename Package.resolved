@@ -15,7 +15,7 @@
         "repositoryURL": "https://github.com/regexident/StateSpace",
         "state": {
           "branch": "master",
-          "revision": "2a644e5916b2a5047cd2b35cdf997f1f198f4a07",
+          "revision": "48971b0164fda18c12550167387c60fd10daa338",
           "version": null
         }
       },
@@ -24,7 +24,7 @@
         "repositoryURL": "https://github.com/regexident/StateSpaceModel",
         "state": {
           "branch": "master",
-          "revision": "e963b5a23cb4673ae8d8826df931cbf6b2425429",
+          "revision": "199ce2ffe65b84442dadb4c2a1af0b8d3b9a533d",
           "version": null
         }
       },
@@ -32,9 +32,9 @@
         "package": "Surge",
         "repositoryURL": "https://github.com/jounce/Surge",
         "state": {
-          "branch": "master",
-          "revision": "844fd175cfc18cf36e6f1a6606d29d5e61caddd8",
-          "version": null
+          "branch": null,
+          "revision": "b9777a8d0c1df1ed0a22d238fb987c60d13513ac",
+          "version": "2.3.0"
         }
       }
     ]
