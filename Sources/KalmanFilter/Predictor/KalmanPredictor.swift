@@ -108,7 +108,7 @@ extension KalmanPredictor: Estimatable {
     public typealias Estimate = KalmanEstimate
 }
 
-extension KalmanPredictor: BayesPredictorProtocol
+extension KalmanPredictor: BayesPredictorProtocol, KalmanPredictorProtocol
     where MotionModel: KalmanMotionModel
 {
     /// Predicts next state using current state and control and calculates probability estimate.
@@ -130,13 +130,7 @@ extension KalmanPredictor: BayesPredictorProtocol
     }
 }
 
-extension KalmanPredictor: KalmanPredictorProtocol
-    where MotionModel: KalmanMotionModel
-{
-    // Nothing
-}
-
-extension KalmanPredictor: ControllableBayesPredictorProtocol
+extension KalmanPredictor: ControllableBayesPredictorProtocol, ControllableKalmanPredictorProtocol
     where MotionModel: ControllableKalmanMotionModel
 {
     /// Predicts next state using current state and control and calculates probability estimate.
@@ -157,10 +151,4 @@ extension KalmanPredictor: ControllableBayesPredictorProtocol
             return (xP, a)
         }
     }
-}
-
-extension KalmanPredictor: ControllableKalmanPredictorProtocol
-    where MotionModel: ControllableKalmanMotionModel
-{
-    // Nothing
 }

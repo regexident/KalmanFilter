@@ -79,7 +79,7 @@ extension KalmanUpdater: Estimatable {
     public typealias Estimate = KalmanEstimate
 }
 
-extension KalmanUpdater: BayesUpdaterProtocol
+extension KalmanUpdater: BayesUpdaterProtocol, KalmanUpdaterProtocol
     where ObservationModel: KalmanObservationModel
 {
     /// Corrects the state error covariance based on innovation vector and Kalman update.
@@ -140,10 +140,4 @@ extension KalmanUpdater: BayesUpdaterProtocol
 
         return KalmanEstimate(state: xP, covariance: pP)
     }
-}
-
-extension KalmanUpdater: KalmanUpdaterProtocol
-    where ObservationModel: KalmanObservationModel
-{
-    // Nothing
 }
