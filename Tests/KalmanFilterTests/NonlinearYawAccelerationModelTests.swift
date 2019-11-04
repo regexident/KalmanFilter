@@ -158,7 +158,7 @@ final class NonlinearYawAccelerationModelTests: XCTestCase {
             return Vector([yaw, acceleration])
         }
 
-        XCTAssertLessThan(similarity, 2.0)
+        XCTAssertLessThan(similarity, 5.0)
     }
 
     func testVariableModel() {

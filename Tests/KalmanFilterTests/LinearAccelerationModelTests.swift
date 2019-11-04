@@ -146,7 +146,7 @@ final class LinearAccelerationModelTests: XCTestCase {
             return Vector([x, y])
         }
 
-        XCTAssertLessThan(similarity, 5.0)
+        XCTAssertLessThan(similarity, 7.5)
     }
 
     func testVariableModel() {
@@ -158,7 +158,7 @@ final class LinearAccelerationModelTests: XCTestCase {
             return Vector([x, y])
         }
 
-        XCTAssertLessThan(similarity, 5.0)
+        XCTAssertLessThan(similarity, 7.5)
     }
 
     private func printSheetAndFail(
