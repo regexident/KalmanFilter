@@ -3,8 +3,6 @@ import BayesFilter
 import StateSpace
 import StateSpaceModel
 
-// swiftlint:disable all identifier_name
-
 public typealias MultiModalKalmanPredictor = MultiModalBayesPredictor
 
 public protocol KalmanPredictorProtocol: BayesPredictorProtocol {
