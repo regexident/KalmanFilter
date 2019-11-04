@@ -125,8 +125,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             }
         }
 
-        var kalmanFilter = KalmanFilter(
-            estimate: estimate,
+        let kalmanFilter = KalmanFilter(
             predictor: KalmanPredictor(
                 motionModel: self.motionModel,
                 processNoise: self.processNoise
@@ -139,15 +138,20 @@ final class LandmarkLocalizationTests: XCTestCase {
             }
         )
 
+        var statefulKalmanFilter = Estimateful(
+            estimate: estimate,
+            wrapping: kalmanFilter
+        )
+
         let filteredStates: [Vector<Double>] = Swift.zip(controls, observations).map { argument in
             let (control, observations) = argument
             for (landmark, observation) in Swift.zip(landmarks, observations) {
-                let _ = kalmanFilter.filter(
+                let _ = statefulKalmanFilter.filter(
                     control: control,
                     observation: MultiModal(model: landmark, value: observation)
                 )
             }
-            return kalmanFilter.estimate.state
+            return statefulKalmanFilter.estimate.state
         }
 
 //        self.printSheetAndFail(

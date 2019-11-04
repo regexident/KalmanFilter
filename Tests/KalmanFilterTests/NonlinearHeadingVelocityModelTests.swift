@@ -1,6 +1,7 @@
 import XCTest
 
 import Surge
+import BayesFilter
 import StateSpace
 import StateSpaceModel
 
@@ -107,8 +108,7 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
             return observation + noise
         }
 
-        var kalmanFilter = KalmanFilter(
-            estimate: estimate,
+        let kalmanFilter = KalmanFilter(
             predictor: KalmanPredictor(
                 motionModel: self.motionModel,
                 processNoise: self.processNoise
@@ -119,10 +119,15 @@ final class NonlinearHeadingVelocityModelTests: XCTestCase {
             )
         )
 
+        var statefulKalmanFilter = Estimateful(
+            estimate: estimate,
+            wrapping: kalmanFilter
+        )
+
         let filteredStates: [Vector<Double>] = Swift.zip(controls, observations).map { argument in
             let (control, observation) = argument
-            kalmanFilter.filter(control: control, observation: observation)
-            return kalmanFilter.estimate.state
+            statefulKalmanFilter.filter(control: control, observation: observation)
+            return statefulKalmanFilter.estimate.state
         }
 
 //        self.printSheetAndFail(
