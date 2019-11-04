@@ -1,5 +1,3 @@
-import Foundation
-
 import Surge
 import BayesFilter
 import StateSpace
