@@ -5,6 +5,8 @@ where
     Estimate == KalmanEstimate
 {}
 
+public typealias StatefulKalmanFilter<Predictor, Updater> = Estimateful<KalmanFilter<Predictor, Updater>>
+
 public typealias KalmanFilter<Predictor, Updater> = BayesFilter<Predictor, Updater, KalmanEstimate>
 
 extension KalmanFilter: KalmanFilterProtocol

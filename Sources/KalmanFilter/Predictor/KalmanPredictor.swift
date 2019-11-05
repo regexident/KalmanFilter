@@ -3,7 +3,9 @@ import BayesFilter
 import StateSpace
 import StateSpaceModel
 
-public typealias MultiModalKalmanPredictor = MultiModalBayesPredictor
+public typealias StatefulMultiModalKalmanPredictor<Model: Hashable, MotionModel> = Estimateful<MultiModalKalmanPredictor<Model, MotionModel>>
+
+public typealias MultiModalKalmanPredictor<Model: Hashable, MotionModel> = MultiModalBayesPredictor<Model, KalmanPredictor<MotionModel>>
 
 public protocol KalmanPredictorProtocol: BayesPredictorProtocol {
     associatedtype MotionModel: KalmanMotionModel
@@ -12,6 +14,8 @@ public protocol KalmanPredictorProtocol: BayesPredictorProtocol {
 public protocol ControllableKalmanPredictorProtocol: ControllableBayesPredictorProtocol {
     associatedtype MotionModel: ControllableKalmanMotionModel
 }
+
+public typealias StatefulKalmanPredictor<MotionModel> = Estimateful<KalmanPredictor<MotionModel>>
 
 public class KalmanPredictor<MotionModel> {
     /// Motion model (used for prediction).

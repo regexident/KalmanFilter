@@ -119,7 +119,7 @@ final class LinearVelocityModelTests: XCTestCase {
             )
         )
 
-        var statefulKalmanFilter = Estimateful(
+        var statefulKalmanFilter = StatefulKalmanFilter(
             estimate: estimate,
             wrapping: kalmanFilter
         )

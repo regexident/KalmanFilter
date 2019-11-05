@@ -3,11 +3,15 @@ import BayesFilter
 import StateSpace
 import StateSpaceModel
 
-public typealias MultiModalKalmanUpdater = MultiModalBayesUpdater
+public typealias StatefulMultiModalKalmanUpdater<Model: Hashable, ObservationModel> = Estimateful<MultiModalKalmanUpdater<Model, ObservationModel>>
+
+public typealias MultiModalKalmanUpdater<Model: Hashable, ObservationModel> = MultiModalBayesUpdater<Model, KalmanUpdater<ObservationModel>>
 
 public protocol KalmanUpdaterProtocol: BayesUpdaterProtocol {
     associatedtype ObservationModel: KalmanObservationModel
 }
+
+public typealias StatefulKalmanUpdater<ObservationModel> = Estimateful<KalmanUpdater<ObservationModel>>
 
 public class KalmanUpdater<ObservationModel> {
     /// Observation model (used for correction).

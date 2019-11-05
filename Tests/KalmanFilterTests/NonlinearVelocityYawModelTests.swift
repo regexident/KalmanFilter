@@ -121,7 +121,7 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
             )
         )
 
-        var statefulKalmanFilter = Estimateful(
+        var statefulKalmanFilter = StatefulKalmanFilter(
             estimate: estimate,
             wrapping: kalmanFilter
         )
