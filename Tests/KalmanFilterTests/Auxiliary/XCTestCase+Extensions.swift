@@ -18,12 +18,14 @@ extension XCTestCase {
               MotionModel.State == Vector<Double>,
               MotionModel.Control == Vector<Double>
     {
+        var generator = DeterministicRandomNumberGenerator(seed: (0, 1, 2, 3))
+
         var signal: [Vector<Double>] = [initialState]
         var state = initialState
         
         for control in controls {
             state = model.apply(state: state, control: control)
-            let standardNoise: Vector<Double> = Vector.randomNormal(count: state.dimensions)
+            let standardNoise: Vector<Double> = Vector.randomNormal(count: state.dimensions, using: &generator)
             let noise: Vector<Double> = covariance * standardNoise
             signal.append(state + noise)
         }
@@ -44,12 +46,14 @@ extension XCTestCase {
         where MotionModel: Statable & UncontrollableMotionModelProtocol,
               MotionModel.State == Vector<Double>
     {
+        var generator = DeterministicRandomNumberGenerator(seed: (0, 1, 2, 3))
+
         var signal: [MotionModel.State] = [initialState]
         var state = initialState
 
         for _ in 0..<count {
             state = model.apply(state: state)
-            let standardNoise: Vector<Double> = Vector.randomNormal(count: state.dimensions)
+            let standardNoise: Vector<Double> = Vector.randomNormal(count: state.dimensions, using: &generator)
             let noise: Vector<Double> = covariance * standardNoise
             signal.append(state + noise)
         }
