@@ -46,33 +46,52 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
         ]
     )
 
-    lazy var processNoise: Matrix<Double> = {
+    lazy var processNoiseStdDeviations: Vector<Double> = {
         let acceleration = 1.0 // max expected acceleration in m/sec^2
         let yaw = 0.1 // max expected yaw in radians/s^2
-        let qs: Matrix<Double> = [
-            [acceleration * (0.5 * time * time)], // translation in m (double-integrated acceleration)
-            [acceleration * (0.5 * time * time)], // translation in m (double-integrated acceleration)
-            [yaw * time], // heading in radians/s (integrated of yaw)
-            [acceleration * time], // velocity in m/s (integrated acceleration)
-            [yaw * 1.0], // yaw in radians/s^2
+        let time = self.time
+        return [
+            acceleration * 0.5 * time * time, // translation in m (double-integrated acceleration)
+            acceleration * 0.5 * time * time, // translation in m (double-integrated acceleration)
+            yaw * time, // heading in radians/s (integrated of yaw)
+            acceleration * time, // velocity in m/s (integrated acceleration)
+            yaw * 1.0, // yaw in radians/s^2
         ]
-        return pow((qs * transpose(qs)), 2.0)
     }()
 
-    lazy var observationNoise: Matrix<Double> = pow(Matrix.diagonal(
-        rows: dimensions.observation,
-        columns: dimensions.observation,
-        repeatedValue: 2.0
-    ), 2.0)
+    lazy var processNoiseCovariance: Matrix<Double> = {
+        let variance = pow(self.processNoiseStdDeviations, 2.0)
+        return Matrix.diagonal(
+            rows: self.dimensions.state,
+            columns: self.dimensions.state,
+            scalars: variance
+        )
+    }()
+
+    lazy var observationNoiseStdDeviations: Vector<Double> = {
+        return [
+            2.0, // position x
+            2.0, // position y
+        ]
+    }()
+
+    lazy var observationNoiseCovariance: Matrix<Double> = {
+        let variance = pow(self.observationNoiseStdDeviations, 2.0)
+        return Matrix.diagonal(
+            rows: self.dimensions.observation,
+            columns: self.dimensions.observation,
+            scalars: variance
+        )
+    }()
 
     lazy var predictor: KalmanPredictor = .init(
         motionModel: self.motionModel,
-        processNoise: self.processNoise
+        processNoise: self.processNoiseCovariance
     )
 
     lazy var updater: KalmanUpdater = .init(
         observationModel: self.observationModel,
-        observationNoise: self.observationNoise
+        observationNoise: self.observationNoiseCovariance
     )
 
     func filter(control: (Int) -> Vector<Double>) -> Double {
@@ -100,24 +119,24 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
             initial: initialState,
             controls: controls,
             model: self.motionModel,
-            processNoise: self.processNoise
+            processNoise: self.processNoiseCovariance
         )
 
         let observations: [Vector<Double>] = states.map { state in
             let observation: Vector<Double> = self.observationModel.apply(state: state)
             let standardNoise: Vector<Double> = Vector.randomNormal(count: self.dimensions.observation)
-            let noise: Vector<Double> = self.observationNoise * standardNoise
+            let noise: Vector<Double> = self.observationNoiseCovariance * standardNoise
             return observation + noise
         }
 
         let kalmanFilter = KalmanFilter(
             predictor: KalmanPredictor(
                 motionModel: self.motionModel,
-                processNoise: self.processNoise
+                processNoise: self.processNoiseCovariance
             ),
             updater: KalmanUpdater(
                 observationModel: self.observationModel,
-                observationNoise: self.observationNoise
+                observationNoise: self.observationNoiseCovariance
             )
         )
 
