@@ -95,6 +95,8 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
     )
 
     func filter(control: (Int) -> Vector<Double>) -> Double {
+        var generator = DeterministicRandomNumberGenerator(seed: (0, 1, 2, 3))
+        
         let initialState: Vector<Double> = [
             0.0, // Position X
             0.0, // Position Y
@@ -124,7 +126,10 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
 
         let observations: [Vector<Double>] = states.map { state in
             let observation: Vector<Double> = self.observationModel.apply(state: state)
-            let standardNoise: Vector<Double> = Vector.randomNormal(count: self.dimensions.observation)
+            let standardNoise: Vector<Double> = .randomNormal(
+                count: self.dimensions.observation,
+                using: &generator
+            )
             let noise: Vector<Double> = self.observationNoiseCovariance * standardNoise
             return observation + noise
         }
@@ -169,7 +174,7 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
             return Vector([velocity, yaw])
         }
 
-        XCTAssertLessThan(similarity, 25.0)
+        XCTAssertEqual(similarity, 2.5, accuracy: 0.1)
     }
 
     func testVariableModel() {
@@ -181,7 +186,7 @@ final class NonlinearVelocityYawModelTests: XCTestCase {
             return Vector([velocity, yaw])
         }
 
-        XCTAssertLessThan(similarity, 5.0)
+        XCTAssertEqual(similarity, 1.8, accuracy: 0.1)
     }
 
     private func printSheetAndFail(

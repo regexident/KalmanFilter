@@ -98,6 +98,8 @@ final class LandmarkLocalizationTests: XCTestCase {
     }()
 
     func filter(control: (Int) -> Vector<Double>) -> Double {
+        var generator = DeterministicRandomNumberGenerator(seed: (0, 1, 2, 3))
+
         let initialState: Vector<Double> = [
             0.0, // target position X
             0.0, // target position Y
@@ -135,7 +137,10 @@ final class LandmarkLocalizationTests: XCTestCase {
             landmarks.map { landmark in
                 let observationModel = self.observationModel(landmark: landmark)
                 let observation: Vector<Double> = observationModel.apply(state: state)
-                let standardNoise: Vector<Double> = Vector.randomNormal(count: self.dimensions.observation)
+                let standardNoise: Vector<Double> = .randomNormal(
+                    count: self.dimensions.observation,
+                    using: &generator
+                )
                 let noise: Vector<Double> = self.observationNoiseCovariance * standardNoise
                 let noisyObservation = observation + noise
                 return noisyObservation
@@ -189,7 +194,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             return Vector([0.0, 0.0])
         }
 
-        XCTAssertLessThan(similarity, 5.0)
+        XCTAssertEqual(similarity, 2.5, accuracy: 0.1)
     }
 
     func testConstantModel() {
@@ -199,7 +204,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             return Vector([x, y])
         }
 
-        XCTAssertLessThan(similarity, 5.0)
+        XCTAssertEqual(similarity, 4.3, accuracy: 0.1)
     }
 
     func testVariableModel() {
@@ -211,7 +216,7 @@ final class LandmarkLocalizationTests: XCTestCase {
             return Vector([x, y])
         }
 
-        XCTAssertLessThan(similarity, 10.0)
+        XCTAssertEqual(similarity, 3.4, accuracy: 0.1)
     }
 
     private func printSheetAndFail(
